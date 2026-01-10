@@ -336,13 +336,23 @@ async function showDetails(id) {
       ` : ''}
       
       <div class="detail-actions">
-        <button class="btn btn--success" onclick="deployProjectWithModal('${project.id}')">
+        <button 
+          class="btn btn--success" 
+          onclick="deployProjectWithModal('${project.id}')"
+          ${project.status === 'running' || project.status === 'building' ? 'disabled' : ''}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 19V5M5 12l7-7 7 7"/>
           </svg>
           Deploy Now
         </button>
-        <button class="btn btn--ghost" onclick="stopProject('${project.id}')">Stop</button>
+        <button 
+          class="btn btn--ghost" 
+          onclick="stopProject('${project.id}')"
+          ${project.status !== 'running' ? 'disabled' : ''}
+        >
+          Stop
+        </button>
         <button class="btn btn--danger" onclick="deleteProject('${project.id}')">Delete</button>
       </div>
     `;
@@ -437,6 +447,15 @@ document.querySelectorAll('.modal__content').forEach(el => {
 
 // Auto-refresh projects every 10 seconds
 setInterval(loadProjects, 10000);
+
+// =========================================
+// Global Functions (for inline onclick)
+// =========================================
+
+window.deployProjectWithModal = deployProjectWithModal;
+window.stopProject = stopProject;
+window.deleteProject = deleteProject;
+window.showDetails = showDetails;
 
 // =========================================
 // Init
