@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
@@ -13,10 +13,10 @@ if (!existsSync(DATA_DIR)) {
 const db = new Database(DB_PATH);
 
 // Enable WAL mode for better performance
-db.pragma('journal_mode = WAL');
+db.run('PRAGMA journal_mode = WAL');
 
 // Create tables
-db.exec(`
+db.run(`
   CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -32,28 +32,32 @@ db.exec(`
     last_deployed_at INTEGER,
     created_at INTEGER DEFAULT (unixepoch()),
     updated_at INTEGER DEFAULT (unixepoch())
-  );
+  )
+`);
 
+db.run(`
   CREATE TABLE IF NOT EXISTS deployments (
     id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    project_id TEXT NOT NULL,
     commit_sha TEXT,
     commit_message TEXT,
     status TEXT DEFAULT 'pending',
     started_at INTEGER DEFAULT (unixepoch()),
     finished_at INTEGER,
     log TEXT,
-    FOREIGN KEY (project_id) REFERENCES projects(id)
-  );
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+  )
+`);
 
+db.run(`
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id);
-  CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status);
+  )
 `);
+
+db.run('CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id)');
+db.run('CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status)');
 
 export { db, DATA_DIR };
 

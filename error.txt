@@ -1,0 +1,302 @@
+amianoobbro@amianoobbro:~/Music/clickdep$ ./start.sh
+🚀 Starting ClickDep...
+[PM2] Starting /home/amianoobbro/Music/clickdep/server/src/index.ts in fork_mode (1 instance)
+[PM2] Done.
+┌────┬─────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name        │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ clickdep    │ default     │ 1.0.0   │ fork    │ 17059    │ 0s     │ 0    │ online    │ 0%       │ 38.2mb   │ ami… │ disabled │
+└────┴─────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /home/amianoobbro/.pm2/dump.pm2
+[TAILING] Tailing last 20 lines for [clickdep] process (change the value with --lines option)
+/home/amianoobbro/.pm2/logs/clickdep-out.log last 20 lines:
+/home/amianoobbro/.pm2/logs/clickdep-error.log last 20 lines:
+0|clickdep | 2026-01-10T15:48:16:
+0|clickdep | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep | 2026-01-10T15:48:16:  99 |     }
+0|clickdep | 2026-01-10T15:48:16: 100 |
+0|clickdep | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep | 2026-01-10T15:48:16:                                             ^
+0|clickdep | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep | 2026-01-10T15:48:16:
+0|clickdep | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep | 2026-01-10T15:48:16:
+
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:16:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:16:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:16:  99 |     }
+0|clickdep  | 2026-01-10T15:48:16: 100 |
+0|clickdep  | 2026-01-10T15:48:16: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:16:                                             ^
+0|clickdep  | 2026-01-10T15:48:16: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:16: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:16: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:16:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:16:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:16:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:16:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:16:
+0|clickdep  | 2026-01-10T15:48:17:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:17:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:17:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:17:  99 |     }
+0|clickdep  | 2026-01-10T15:48:17: 100 |
+0|clickdep  | 2026-01-10T15:48:17: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:17:                                             ^
+0|clickdep  | 2026-01-10T15:48:17: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:17: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:17: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:17:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:17:
+0|clickdep  | 2026-01-10T15:48:17:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:17:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:17:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:17:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:17:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:17:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:17:
+0|clickdep  | 2026-01-10T15:48:17:  96 |     const isPatching = patching.has(filename)
+0|clickdep  | 2026-01-10T15:48:17:  97 |     if (isPatching === false) {
+0|clickdep  | 2026-01-10T15:48:17:  98 |       patching.add(filename)
+0|clickdep  | 2026-01-10T15:48:17:  99 |     }
+0|clickdep  | 2026-01-10T15:48:17: 100 |
+0|clickdep  | 2026-01-10T15:48:17: 101 |     const exports = self._origRequire.apply(this, arguments)
+0|clickdep  | 2026-01-10T15:48:17:                                             ^
+0|clickdep  | 2026-01-10T15:48:17: error: 'better-sqlite3' is not yet supported in Bun.
+0|clickdep  | 2026-01-10T15:48:17: Track the status in https://github.com/oven-sh/bun/issues/4290
+0|clickdep  | 2026-01-10T15:48:17: In the meantime, you could try bun:sqlite which has a similar API.
+0|clickdep  | 2026-01-10T15:48:17:  code: "ERR_DLOPEN_FAILED"
+0|clickdep  | 2026-01-10T15:48:17:
+0|clickdep  | 2026-01-10T15:48:17:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:17:       at bindings (/home/amianoobbro/Music/clickdep/server/node_modules/bindings/bindings.js:112:48)
+0|clickdep  | 2026-01-10T15:48:17:       at new Database (/home/amianoobbro/Music/clickdep/server/node_modules/better-sqlite3/lib/database.js:48:29)
+0|clickdep  | 2026-01-10T15:48:17:       at /home/amianoobbro/Music/clickdep/server/src/db/schema.ts:13:12
+0|clickdep  | 2026-01-10T15:48:17:       at <anonymous> (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+0|clickdep  | 2026-01-10T15:48:17:       at <anonymous> (/usr/lib/node_modules/pm2/lib/ProcessContainerForkBun.js:27:1)
+0|clickdep  | 2026-01-10T15:48:17:
+

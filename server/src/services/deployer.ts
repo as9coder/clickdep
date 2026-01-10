@@ -1,7 +1,7 @@
 import { db, type Project, type Deployment } from '../db/schema';
 import { cloneRepo, pullRepo, getRepoPath, deleteRepo, hasNewCommits } from './github';
 import { detectFramework, buildProject } from './builder';
-import { startProcess, stopProcess, getProcessStatus, getNextPort } from './pm2';
+import { startProcess, stopProcess, getNextPort } from './pm2';
 import { randomUUID } from 'crypto';
 
 /**
@@ -15,10 +15,8 @@ export async function createProject(
     const id = randomUUID();
 
     // Get used ports
-    const usedPorts = db
-        .prepare('SELECT port FROM projects WHERE port IS NOT NULL')
-        .all()
-        .map((p: any) => p.port);
+    const usedPortsResult = db.query('SELECT port FROM projects WHERE port IS NOT NULL').all() as { port: number }[];
+    const usedPorts = usedPortsResult.map((p) => p.port);
     const port = getNextPort(usedPorts);
 
     // Clone repository
@@ -29,19 +27,10 @@ export async function createProject(
     const framework = detectFramework(repoPath);
 
     // Insert into database
-    db.prepare(`
-    INSERT INTO projects (id, name, github_url, branch, framework, build_command, start_command, output_dir, port)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-        id,
-        name,
-        githubUrl,
-        branch,
-        framework.name,
-        framework.buildCommand,
-        framework.startCommand,
-        framework.outputDir,
-        port
+    db.run(
+        `INSERT INTO projects (id, name, github_url, branch, framework, build_command, start_command, output_dir, port)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, name, githubUrl, branch, framework.name, framework.buildCommand, framework.startCommand, framework.outputDir, port]
     );
 
     return getProject(id)!;
@@ -51,21 +40,21 @@ export async function createProject(
  * Get a project by ID
  */
 export function getProject(id: string): Project | null {
-    return db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Project | null;
+    return db.query('SELECT * FROM projects WHERE id = ?').get(id) as Project | null;
 }
 
 /**
  * Get a project by name
  */
 export function getProjectByName(name: string): Project | null {
-    return db.prepare('SELECT * FROM projects WHERE name = ?').get(name) as Project | null;
+    return db.query('SELECT * FROM projects WHERE name = ?').get(name) as Project | null;
 }
 
 /**
  * List all projects
  */
 export function listProjects(): Project[] {
-    return db.prepare('SELECT * FROM projects ORDER BY created_at DESC').all() as Project[];
+    return db.query('SELECT * FROM projects ORDER BY created_at DESC').all() as Project[];
 }
 
 /**
@@ -81,8 +70,11 @@ export async function deleteProject(id: string): Promise<void> {
     // Delete repo
     deleteRepo(project.name);
 
-    // Delete from database (cascades to deployments)
-    db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+    // Delete deployments first (manual cascade since bun:sqlite may not support it)
+    db.run('DELETE FROM deployments WHERE project_id = ?', [id]);
+
+    // Delete from database
+    db.run('DELETE FROM projects WHERE id = ?', [id]);
 }
 
 /**
@@ -96,31 +88,33 @@ export async function deployProject(id: string): Promise<Deployment> {
     const repoPath = getRepoPath(project.name);
 
     // Create deployment record
-    db.prepare(`
-    INSERT INTO deployments (id, project_id, status)
-    VALUES (?, ?, 'building')
-  `).run(deploymentId, id);
+    db.run(
+        `INSERT INTO deployments (id, project_id, status) VALUES (?, ?, 'building')`,
+        [deploymentId, id]
+    );
 
     // Update project status
-    db.prepare("UPDATE projects SET status = 'building', updated_at = unixepoch() WHERE id = ?").run(id);
+    db.run("UPDATE projects SET status = 'building', updated_at = unixepoch() WHERE id = ?", [id]);
 
     try {
         // Pull latest
         const repoInfo = await pullRepo(project.name);
 
         // Update deployment with commit info
-        db.prepare(`
-      UPDATE deployments SET commit_sha = ?, commit_message = ? WHERE id = ?
-    `).run(repoInfo.latestCommit, repoInfo.commitMessage, deploymentId);
+        db.run(
+            'UPDATE deployments SET commit_sha = ?, commit_message = ? WHERE id = ?',
+            [repoInfo.latestCommit, repoInfo.commitMessage, deploymentId]
+        );
 
         // Build
         const buildResult = await buildProject(repoPath, project.build_command);
 
         if (!buildResult.success) {
-            db.prepare(`
-        UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?
-      `).run(buildResult.log, deploymentId);
-            db.prepare("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?").run(id);
+            db.run(
+                "UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?",
+                [buildResult.log, deploymentId]
+            );
+            db.run("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?", [id]);
             return getDeployment(deploymentId)!;
         }
 
@@ -136,28 +130,31 @@ export async function deployProject(id: string): Promise<Deployment> {
         );
 
         if (!started) {
-            db.prepare(`
-        UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?
-      `).run(buildResult.log + '\n❌ Failed to start process', deploymentId);
-            db.prepare("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?").run(id);
+            db.run(
+                "UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?",
+                [buildResult.log + '\n❌ Failed to start process', deploymentId]
+            );
+            db.run("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?", [id]);
             return getDeployment(deploymentId)!;
         }
 
         // Success!
-        db.prepare(`
-      UPDATE deployments SET status = 'success', finished_at = unixepoch(), log = ? WHERE id = ?
-    `).run(buildResult.log, deploymentId);
-        db.prepare(`
-      UPDATE projects SET status = 'running', last_commit = ?, last_deployed_at = unixepoch(), updated_at = unixepoch() 
-      WHERE id = ?
-    `).run(repoInfo.latestCommit, id);
+        db.run(
+            "UPDATE deployments SET status = 'success', finished_at = unixepoch(), log = ? WHERE id = ?",
+            [buildResult.log, deploymentId]
+        );
+        db.run(
+            "UPDATE projects SET status = 'running', last_commit = ?, last_deployed_at = unixepoch(), updated_at = unixepoch() WHERE id = ?",
+            [repoInfo.latestCommit, id]
+        );
 
         return getDeployment(deploymentId)!;
     } catch (error: any) {
-        db.prepare(`
-      UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?
-    `).run(`Error: ${error.message}`, deploymentId);
-        db.prepare("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?").run(id);
+        db.run(
+            "UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?",
+            [`Error: ${error.message}`, deploymentId]
+        );
+        db.run("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?", [id]);
         return getDeployment(deploymentId)!;
     }
 }
@@ -170,30 +167,28 @@ export async function stopProjectProcess(id: string): Promise<void> {
     if (!project) return;
 
     await stopProcess(project.name);
-    db.prepare("UPDATE projects SET status = 'stopped', updated_at = unixepoch() WHERE id = ?").run(id);
+    db.run("UPDATE projects SET status = 'stopped', updated_at = unixepoch() WHERE id = ?", [id]);
 }
 
 /**
  * Get deployment by ID
  */
 export function getDeployment(id: string): Deployment | null {
-    return db.prepare('SELECT * FROM deployments WHERE id = ?').get(id) as Deployment | null;
+    return db.query('SELECT * FROM deployments WHERE id = ?').get(id) as Deployment | null;
 }
 
 /**
  * List deployments for a project
  */
 export function listDeployments(projectId: string, limit: number = 10): Deployment[] {
-    return db
-        .prepare('SELECT * FROM deployments WHERE project_id = ? ORDER BY started_at DESC LIMIT ?')
-        .all(projectId, limit) as Deployment[];
+    return db.query('SELECT * FROM deployments WHERE project_id = ? ORDER BY started_at DESC LIMIT ?').all(projectId, limit) as Deployment[];
 }
 
 /**
  * Check all projects for updates (polling)
  */
 export async function checkForUpdates(): Promise<string[]> {
-    const projects = listProjects().filter(p => p.status === 'running');
+    const projects = listProjects().filter((p) => p.status === 'running');
     const updated: string[] = [];
 
     for (const project of projects) {
