@@ -1,4 +1,26 @@
-import { $ } from 'bun';
+/**
+ * Run a shell command
+ */
+async function runShell(cmd: string, quiet = false): Promise<{ success: boolean; output: string }> {
+    try {
+        const proc = Bun.spawn(['bash', '-c', cmd], {
+            stdout: quiet ? 'ignore' : 'pipe',
+            stderr: quiet ? 'ignore' : 'pipe',
+        });
+
+        let output = '';
+        if (!quiet) {
+            const stdout = await new Response(proc.stdout).text();
+            const stderr = await new Response(proc.stderr).text();
+            output = stdout + (stderr ? `\n${stderr}` : '');
+        }
+
+        const exitCode = await proc.exited;
+        return { success: exitCode === 0, output };
+    } catch (error: any) {
+        return { success: false, output: error.message };
+    }
+}
 
 interface PM2Process {
     name: string;
@@ -23,12 +45,43 @@ export async function startProcess(
 
         // Replace $PORT placeholder
         const finalCommand = command.replace('$PORT', port.toString());
-        const [cmd, ...args] = finalCommand.split(' ');
 
-        // Start with PM2
-        await $`pm2 start ${cmd} --name ${name} --cwd ${cwd} -- ${args}`.quiet();
-        await $`pm2 save`.quiet();
+        // For static sites using npx serve
+        if (finalCommand.startsWith('npx serve')) {
+            const serveArgs = finalCommand.replace('npx serve', '').trim();
+            const result = await runShell(
+                `cd "${cwd}" && pm2 start "npx" --name "${name}" -- serve ${serveArgs}`,
+                true
+            );
+            if (!result.success) {
+                console.error(`Failed to start ${name}:`, result.output);
+                return false;
+            }
+        } else if (finalCommand.startsWith('npm run')) {
+            // For npm scripts (Next.js, etc.)
+            const script = finalCommand.replace('npm run ', '');
+            const result = await runShell(
+                `cd "${cwd}" && pm2 start npm --name "${name}" -- run ${script}`,
+                true
+            );
+            if (!result.success) {
+                console.error(`Failed to start ${name}:`, result.output);
+                return false;
+            }
+        } else {
+            // Generic command
+            const result = await runShell(
+                `cd "${cwd}" && pm2 start "${finalCommand}" --name "${name}"`,
+                true
+            );
+            if (!result.success) {
+                console.error(`Failed to start ${name}:`, result.output);
+                return false;
+            }
+        }
 
+        // Save PM2 state
+        await runShell('pm2 save', true);
         return true;
     } catch (error) {
         console.error(`Failed to start ${name}:`, error);
@@ -41,11 +94,10 @@ export async function startProcess(
  */
 export async function stopProcess(name: string): Promise<boolean> {
     try {
-        await $`pm2 stop ${name}`.quiet();
-        await $`pm2 delete ${name}`.quiet();
+        await runShell(`pm2 stop "${name}"`, true);
+        await runShell(`pm2 delete "${name}"`, true);
         return true;
     } catch {
-        // Process might not exist, that's ok
         return true;
     }
 }
@@ -54,12 +106,8 @@ export async function stopProcess(name: string): Promise<boolean> {
  * Restart a PM2 process
  */
 export async function restartProcess(name: string): Promise<boolean> {
-    try {
-        await $`pm2 restart ${name}`.quiet();
-        return true;
-    } catch {
-        return false;
-    }
+    const result = await runShell(`pm2 restart "${name}"`, true);
+    return result.success;
 }
 
 /**
@@ -67,8 +115,11 @@ export async function restartProcess(name: string): Promise<boolean> {
  */
 export async function getProcessStatus(name: string): Promise<'online' | 'stopped' | 'error' | 'not_found'> {
     try {
-        const result = await $`pm2 jlist`.json();
-        const proc = result.find((p: any) => p.name === name);
+        const result = await runShell('pm2 jlist');
+        if (!result.success) return 'not_found';
+
+        const processes = JSON.parse(result.output);
+        const proc = processes.find((p: any) => p.name === name);
 
         if (!proc) return 'not_found';
 
@@ -87,12 +138,8 @@ export async function getProcessStatus(name: string): Promise<'online' | 'stoppe
  * Get logs from a process
  */
 export async function getProcessLogs(name: string, lines: number = 100): Promise<string> {
-    try {
-        const logs = await $`pm2 logs ${name} --lines ${lines} --nostream`.text();
-        return logs;
-    } catch {
-        return '';
-    }
+    const result = await runShell(`pm2 logs "${name}" --lines ${lines} --nostream`);
+    return result.output || '';
 }
 
 /**
@@ -100,8 +147,11 @@ export async function getProcessLogs(name: string, lines: number = 100): Promise
  */
 export async function listProcesses(): Promise<PM2Process[]> {
     try {
-        const result = await $`pm2 jlist`.json();
-        return result.map((p: any) => ({
+        const result = await runShell('pm2 jlist');
+        if (!result.success) return [];
+
+        const processes = JSON.parse(result.output);
+        return processes.map((p: any) => ({
             name: p.name,
             pm_id: p.pm_id,
             status: p.pm2_env?.status || 'unknown',

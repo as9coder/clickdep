@@ -7,18 +7,19 @@ const API_BASE = '/api';
 // State
 let projects = [];
 let currentProject = null;
+let deploymentPollingId = null;
 
 // DOM Elements
 const elements = {
-    serverIp: document.getElementById('server-ip'),
-    projectsGrid: document.getElementById('projects-grid'),
-    emptyState: document.getElementById('empty-state'),
-    addBtn: document.getElementById('add-project-btn'),
-    addModal: document.getElementById('add-modal'),
-    addForm: document.getElementById('add-project-form'),
-    detailModal: document.getElementById('detail-modal'),
-    detailTitle: document.getElementById('detail-title'),
-    detailBody: document.getElementById('detail-body'),
+  serverIp: document.getElementById('server-ip'),
+  projectsGrid: document.getElementById('projects-grid'),
+  emptyState: document.getElementById('empty-state'),
+  addBtn: document.getElementById('add-project-btn'),
+  addModal: document.getElementById('add-modal'),
+  addForm: document.getElementById('add-project-form'),
+  detailModal: document.getElementById('detail-modal'),
+  detailTitle: document.getElementById('detail-title'),
+  detailBody: document.getElementById('detail-body'),
 };
 
 // =========================================
@@ -26,18 +27,18 @@ const elements = {
 // =========================================
 
 async function api(endpoint, options = {}) {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-        headers: { 'Content-Type': 'application/json' },
-        ...options,
-        body: options.body ? JSON.stringify(options.body) : undefined,
-    });
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
 
-    if (!res.ok) {
-        const error = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(error.error || 'Request failed');
-    }
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.error || 'Request failed');
+  }
 
-    return res.json();
+  return res.json();
 }
 
 // =========================================
@@ -45,19 +46,19 @@ async function api(endpoint, options = {}) {
 // =========================================
 
 function renderProjectCard(project) {
-    const statusBadge = {
-        running: 'badge--success',
-        building: 'badge--warning',
-        error: 'badge--error',
-        stopped: 'badge--neutral',
-        idle: 'badge--neutral',
-    }[project.status] || 'badge--neutral';
+  const statusBadge = {
+    running: 'badge--success',
+    building: 'badge--warning',
+    error: 'badge--error',
+    stopped: 'badge--neutral',
+    idle: 'badge--neutral',
+  }[project.status] || 'badge--neutral';
 
-    const card = document.createElement('div');
-    card.className = 'project-card';
-    card.dataset.id = project.id;
+  const card = document.createElement('div');
+  card.className = 'project-card';
+  card.dataset.id = project.id;
 
-    card.innerHTML = `
+  card.innerHTML = `
     <div class="project-card__header">
       <div>
         <div class="project-card__name">${escapeHtml(project.name)}</div>
@@ -80,7 +81,7 @@ function renderProjectCard(project) {
     </div>
     
     <div class="project-card__actions">
-      <button class="btn btn--success btn--sm" onclick="event.stopPropagation(); deployProject('${project.id}')">
+      <button class="btn btn--success btn--sm" onclick="event.stopPropagation(); deployProjectWithModal('${project.id}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 19V5M5 12l7-7 7 7"/>
         </svg>
@@ -92,8 +93,8 @@ function renderProjectCard(project) {
     </div>
   `;
 
-    card.addEventListener('click', () => showDetails(project.id));
-    return card;
+  card.addEventListener('click', () => showDetails(project.id));
+  return card;
 }
 
 // =========================================
@@ -101,16 +102,16 @@ function renderProjectCard(project) {
 // =========================================
 
 function renderProjects() {
-    elements.projectsGrid.innerHTML = '';
+  elements.projectsGrid.innerHTML = '';
 
-    if (projects.length === 0) {
-        elements.emptyState.classList.remove('hidden');
-        elements.projectsGrid.classList.add('hidden');
-    } else {
-        elements.emptyState.classList.add('hidden');
-        elements.projectsGrid.classList.remove('hidden');
-        projects.forEach(p => elements.projectsGrid.appendChild(renderProjectCard(p)));
-    }
+  if (projects.length === 0) {
+    elements.emptyState.classList.remove('hidden');
+    elements.projectsGrid.classList.add('hidden');
+  } else {
+    elements.emptyState.classList.add('hidden');
+    elements.projectsGrid.classList.remove('hidden');
+    projects.forEach(p => elements.projectsGrid.appendChild(renderProjectCard(p)));
+  }
 }
 
 // =========================================
@@ -118,89 +119,173 @@ function renderProjects() {
 // =========================================
 
 async function loadProjects() {
-    try {
-        projects = await api('/projects');
-        renderProjects();
-    } catch (err) {
-        console.error('Failed to load projects:', err);
-    }
+  try {
+    projects = await api('/projects');
+    renderProjects();
+  } catch (err) {
+    console.error('Failed to load projects:', err);
+  }
 }
 
 async function loadServerInfo() {
-    try {
-        const info = await api('/info');
-        elements.serverIp.textContent = info.ip;
-    } catch {
-        elements.serverIp.textContent = window.location.hostname;
-    }
+  try {
+    const info = await api('/info');
+    elements.serverIp.textContent = info.ip;
+  } catch {
+    elements.serverIp.textContent = window.location.hostname;
+  }
 }
 
 async function addProject(name, githubUrl, branch) {
+  try {
+    const project = await api('/projects', {
+      method: 'POST',
+      body: { name, github_url: githubUrl, branch },
+    });
+
+    projects.unshift(project);
+    renderProjects();
+    closeModals();
+
+    // Auto-deploy with live modal
+    deployProjectWithModal(project.id);
+  } catch (err) {
+    alert(`Failed to add project: ${err.message}`);
+  }
+}
+
+// Deploy with live status modal
+async function deployProjectWithModal(id) {
+  // Find project name
+  const project = projects.find(p => p.id === id);
+  if (!project) return;
+
+  // Show deployment modal
+  elements.detailTitle.textContent = `Deploying: ${project.name}`;
+  elements.detailBody.innerHTML = `
+    <div class="deploy-status">
+      <div class="deploy-status__step" id="step-idle">
+        <div class="deploy-status__icon">⏳</div>
+        <div class="deploy-status__label">Idle</div>
+      </div>
+      <div class="deploy-status__arrow">→</div>
+      <div class="deploy-status__step" id="step-building">
+        <div class="deploy-status__icon">🔨</div>
+        <div class="deploy-status__label">Building</div>
+      </div>
+      <div class="deploy-status__arrow">→</div>
+      <div class="deploy-status__step" id="step-running">
+        <div class="deploy-status__icon">🚀</div>
+        <div class="deploy-status__label">Running</div>
+      </div>
+    </div>
+    <div class="deploy-logs-label">Live Logs:</div>
+    <div class="logs-container" id="deploy-logs">Starting deployment...</div>
+  `;
+  elements.detailModal.classList.remove('hidden');
+
+  // Start deployment in background
+  api(`/projects/${id}/deploy`, { method: 'POST' }).catch(err => {
+    document.getElementById('deploy-logs').textContent += `\n\n❌ Error: ${err.message}`;
+  });
+
+  // Poll for status updates
+  let lastLog = '';
+  const pollStatus = async () => {
     try {
-        const project = await api('/projects', {
-            method: 'POST',
-            body: { name, github_url: githubUrl, branch },
-        });
+      const proj = await api(`/projects/${id}`);
+      const deployments = await api(`/projects/${id}/deployments`);
+      const latest = deployments[0];
 
-        projects.unshift(project);
-        renderProjects();
-        closeModals();
+      // Update status indicators
+      updateDeployStep('idle', proj.status === 'idle' ? 'active' : 'done');
+      updateDeployStep('building', proj.status === 'building' ? 'active' : (proj.status === 'running' || proj.status === 'error' ? 'done' : ''));
+      updateDeployStep('running', proj.status === 'running' ? 'active' : '');
 
-        // Auto-deploy
-        deployProject(project.id);
+      // Update logs
+      if (latest && latest.log !== lastLog) {
+        lastLog = latest.log || '';
+        document.getElementById('deploy-logs').textContent = lastLog;
+        // Auto-scroll
+        const logsEl = document.getElementById('deploy-logs');
+        logsEl.scrollTop = logsEl.scrollHeight;
+      }
+
+      // If still building, continue polling
+      if (proj.status === 'building') {
+        deploymentPollingId = setTimeout(pollStatus, 1000);
+      } else {
+        // Deployment finished - refresh projects list
+        await loadProjects();
+
+        // Show final status
+        if (proj.status === 'running') {
+          document.getElementById('deploy-logs').textContent += '\n\n✅ Deployment successful! Site is now live.';
+        } else if (proj.status === 'error') {
+          updateDeployStep('running', 'error');
+        }
+      }
     } catch (err) {
-        alert(`Failed to add project: ${err.message}`);
+      console.error('Polling error:', err);
     }
+  };
+
+  // Start polling after a short delay
+  setTimeout(pollStatus, 500);
+}
+
+function updateDeployStep(stepId, state) {
+  const step = document.getElementById(`step-${stepId}`);
+  if (!step) return;
+
+  step.classList.remove('active', 'done', 'error');
+  if (state) step.classList.add(state);
 }
 
 async function deployProject(id) {
-    const card = document.querySelector(`.project-card[data-id="${id}"]`);
-    if (card) card.classList.add('loading');
-
-    try {
-        await api(`/projects/${id}/deploy`, { method: 'POST' });
-        await loadProjects();
-    } catch (err) {
-        alert(`Deploy failed: ${err.message}`);
-    } finally {
-        if (card) card.classList.remove('loading');
-    }
+  deployProjectWithModal(id);
 }
 
 async function stopProject(id) {
-    try {
-        await api(`/projects/${id}/stop`, { method: 'POST' });
-        await loadProjects();
-        if (currentProject?.id === id) showDetails(id);
-    } catch (err) {
-        alert(`Stop failed: ${err.message}`);
-    }
+  try {
+    await api(`/projects/${id}/stop`, { method: 'POST' });
+    await loadProjects();
+    if (currentProject?.id === id) showDetails(id);
+  } catch (err) {
+    alert(`Stop failed: ${err.message}`);
+  }
 }
 
 async function deleteProject(id) {
-    if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
+  if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
 
-    try {
-        await api(`/projects/${id}`, { method: 'DELETE' });
-        projects = projects.filter(p => p.id !== id);
-        renderProjects();
-        closeModals();
-    } catch (err) {
-        alert(`Delete failed: ${err.message}`);
-    }
+  try {
+    await api(`/projects/${id}`, { method: 'DELETE' });
+    projects = projects.filter(p => p.id !== id);
+    renderProjects();
+    closeModals();
+  } catch (err) {
+    alert(`Delete failed: ${err.message}`);
+  }
 }
 
 async function showDetails(id) {
-    try {
-        const project = await api(`/projects/${id}`);
-        const deployments = await api(`/projects/${id}/deployments`);
-        currentProject = project;
+  // Stop any existing polling
+  if (deploymentPollingId) {
+    clearTimeout(deploymentPollingId);
+    deploymentPollingId = null;
+  }
 
-        elements.detailTitle.textContent = project.name;
+  try {
+    const project = await api(`/projects/${id}`);
+    const deployments = await api(`/projects/${id}/deployments`);
+    currentProject = project;
 
-        const latestDeployment = deployments[0];
+    elements.detailTitle.textContent = project.name;
 
-        elements.detailBody.innerHTML = `
+    const latestDeployment = deployments[0];
+
+    elements.detailBody.innerHTML = `
       <div class="detail-section">
         <div class="detail-section__title">Configuration</div>
         <div class="detail-row">
@@ -210,6 +295,10 @@ async function showDetails(id) {
         <div class="detail-row">
           <span class="detail-row__label">Port</span>
           <span class="detail-row__value">${project.port}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-row__label">URL</span>
+          <a href="http://${window.location.hostname}:${project.port}" target="_blank" class="detail-row__value">http://${window.location.hostname}:${project.port}</a>
         </div>
         <div class="detail-row">
           <span class="detail-row__label">Framework</span>
@@ -247,7 +336,7 @@ async function showDetails(id) {
       ` : ''}
       
       <div class="detail-actions">
-        <button class="btn btn--success" onclick="deployProject('${project.id}')">
+        <button class="btn btn--success" onclick="deployProjectWithModal('${project.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 19V5M5 12l7-7 7 7"/>
           </svg>
@@ -258,10 +347,10 @@ async function showDetails(id) {
       </div>
     `;
 
-        elements.detailModal.classList.remove('hidden');
-    } catch (err) {
-        alert(`Failed to load details: ${err.message}`);
-    }
+    elements.detailModal.classList.remove('hidden');
+  } catch (err) {
+    alert(`Failed to load details: ${err.message}`);
+  }
 }
 
 // =========================================
@@ -269,15 +358,21 @@ async function showDetails(id) {
 // =========================================
 
 function openAddModal() {
-    elements.addModal.classList.remove('hidden');
-    document.getElementById('project-name').focus();
+  elements.addModal.classList.remove('hidden');
+  document.getElementById('project-name').focus();
 }
 
 function closeModals() {
-    elements.addModal.classList.add('hidden');
-    elements.detailModal.classList.add('hidden');
-    elements.addForm.reset();
-    currentProject = null;
+  elements.addModal.classList.add('hidden');
+  elements.detailModal.classList.add('hidden');
+  elements.addForm.reset();
+  currentProject = null;
+
+  // Stop polling when closing
+  if (deploymentPollingId) {
+    clearTimeout(deploymentPollingId);
+    deploymentPollingId = null;
+  }
 }
 
 // =========================================
@@ -285,30 +380,30 @@ function closeModals() {
 // =========================================
 
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function formatTime(timestamp) {
-    const date = new Date(timestamp * 1000);
-    const now = new Date();
-    const diff = Math.floor((now - date) / 1000);
+  const date = new Date(timestamp * 1000);
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000);
 
-    if (diff < 60) return 'just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return date.toLocaleDateString();
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return date.toLocaleDateString();
 }
 
 function getStatusClass(status) {
-    return {
-        running: 'success',
-        building: 'warning',
-        error: 'error',
-        stopped: 'neutral',
-        idle: 'neutral',
-    }[status] || 'neutral';
+  return {
+    running: 'success',
+    building: 'warning',
+    error: 'error',
+    stopped: 'neutral',
+    idle: 'neutral',
+  }[status] || 'neutral';
 }
 
 // =========================================
@@ -318,26 +413,26 @@ function getStatusClass(status) {
 elements.addBtn.addEventListener('click', openAddModal);
 
 elements.addForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name = document.getElementById('project-name').value.trim();
-    const githubUrl = document.getElementById('github-url').value.trim();
-    const branch = document.getElementById('branch').value.trim() || 'main';
-    addProject(name, githubUrl, branch);
+  e.preventDefault();
+  const name = document.getElementById('project-name').value.trim();
+  const githubUrl = document.getElementById('github-url').value.trim();
+  const branch = document.getElementById('branch').value.trim() || 'main';
+  addProject(name, githubUrl, branch);
 });
 
 // Close modals on backdrop click or close button
 document.querySelectorAll('.modal__backdrop, [data-close-modal]').forEach(el => {
-    el.addEventListener('click', closeModals);
+  el.addEventListener('click', closeModals);
 });
 
 // Close modals on Escape
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModals();
+  if (e.key === 'Escape') closeModals();
 });
 
 // Prevent modal content clicks from closing
 document.querySelectorAll('.modal__content').forEach(el => {
-    el.addEventListener('click', (e) => e.stopPropagation());
+  el.addEventListener('click', (e) => e.stopPropagation());
 });
 
 // Auto-refresh projects every 10 seconds
