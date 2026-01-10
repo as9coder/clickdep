@@ -2,7 +2,6 @@ import { db, type Project, type Deployment } from '../db/schema';
 import { cloneRepo, pullRepo, getRepoPath, deleteRepo, hasNewCommits } from './github';
 import { detectFramework, buildProject } from './builder';
 import { startProcess, stopProcess, getNextPort } from './pm2';
-import { randomUUID } from 'crypto';
 
 /**
  * Create a new project
@@ -12,7 +11,7 @@ export async function createProject(
     githubUrl: string,
     branch: string = 'main'
 ): Promise<Project> {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
 
     // Get used ports
     const usedPortsResult = db.query('SELECT port FROM projects WHERE port IS NOT NULL').all() as { port: number }[];
@@ -84,7 +83,7 @@ export async function deployProject(id: string): Promise<Deployment> {
     const project = getProject(id);
     if (!project) throw new Error('Project not found');
 
-    const deploymentId = randomUUID();
+    const deploymentId = crypto.randomUUID();
     const repoPath = getRepoPath(project.name);
 
     // Create deployment record
