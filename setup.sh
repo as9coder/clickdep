@@ -38,12 +38,6 @@ if ! command -v bun &> /dev/null; then
   export PATH="$BUN_INSTALL/bin:$PATH"
 fi
 
-# Install PM2 globally
-if ! command -v pm2 &> /dev/null; then
-  echo "📦 Installing PM2..."
-  sudo npm install -g pm2
-fi
-
 # Install serve globally (for static sites)
 if ! command -v serve &> /dev/null; then
   echo "📦 Installing serve..."
@@ -68,17 +62,14 @@ cd ../dashboard
 bun install
 bun run build
 
-# Create data directory
-echo "📂 Creating data directory..."
+# Create data directories
+echo "📂 Creating data directories..."
 mkdir -p ../data/repos
 mkdir -p ../data/logs
+mkdir -p ../data/pids
 
 # Go back to root
 cd ..
-
-# Setup PM2 startup
-echo "⚙️  Configuring PM2 startup..."
-pm2 startup systemd -u $USER --hp $HOME || true
 
 echo ""
 echo "╔═══════════════════════════════════════════════╗"
@@ -87,9 +78,7 @@ echo "╠═══════════════════════�
 echo "║                                               ║"
 echo "║  To start ClickDep:                           ║"
 echo "║    cd $SCRIPT_DIR"
-echo "║    pm2 start server/src/index.ts \\           ║"
-echo "║        --interpreter ~/.bun/bin/bun \\        ║"
-echo "║        --name clickdep                        ║"
+echo "║    bun run server/src/index.ts                ║"
 echo "║                                               ║"
 echo "║  Or use the start script:                     ║"
 echo "║    ./start.sh                                 ║"

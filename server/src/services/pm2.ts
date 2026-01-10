@@ -1,37 +1,43 @@
+import { existsSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+
+// Store running processes in memory
+const runningProcesses: Map<string, { proc: any; port: number; pid: number }> = new Map();
+
+// PID file directory
+const PID_DIR = join(import.meta.dir, '../../../data/pids');
+
 /**
- * Run a shell command
+ * Ensure PID directory exists
  */
-async function runShell(cmd: string, quiet = false): Promise<{ success: boolean; output: string }> {
-    try {
-        const proc = Bun.spawn(['bash', '-c', cmd], {
-            stdout: quiet ? 'ignore' : 'pipe',
-            stderr: quiet ? 'ignore' : 'pipe',
-        });
-
-        let output = '';
-        if (!quiet) {
-            const stdout = await new Response(proc.stdout).text();
-            const stderr = await new Response(proc.stderr).text();
-            output = stdout + (stderr ? `\n${stderr}` : '');
-        }
-
-        const exitCode = await proc.exited;
-        return { success: exitCode === 0, output };
-    } catch (error: any) {
-        return { success: false, output: error.message };
+function ensurePidDir() {
+    const { mkdirSync } = require('fs');
+    if (!existsSync(PID_DIR)) {
+        mkdirSync(PID_DIR, { recursive: true });
     }
 }
 
-interface PM2Process {
-    name: string;
-    pm_id: number;
-    status: string;
-    cpu: number;
-    memory: number;
+/**
+ * Get PID file path for a project
+ */
+function getPidFile(name: string): string {
+    return join(PID_DIR, `${name}.pid`);
 }
 
 /**
- * Start a process with PM2
+ * Check if a process is running by PID
+ */
+function isProcessRunning(pid: number): boolean {
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Start a process for serving static files
  */
 export async function startProcess(
     name: string,
@@ -40,140 +46,182 @@ export async function startProcess(
     port: number
 ): Promise<boolean> {
     try {
-        // Stop existing process if running
+        // Stop existing process
         await stopProcess(name);
 
         // Replace $PORT placeholder
         const finalCommand = command.replace(/\$PORT/g, port.toString());
 
-        console.log(`[PM2] Starting ${name}: ${finalCommand} in ${cwd}`);
+        console.log(`[Process] Starting ${name}: ${finalCommand} in ${cwd}`);
 
-        let result;
+        // Parse the command
+        let executable: string;
+        let args: string[];
 
-        // For static sites using npx serve
         if (finalCommand.includes('npx serve')) {
-            // Use pm2 start with script approach
-            // e.g., "npx serve . -s -l 3001" 
-            const serveArgs = finalCommand.replace('npx serve', '').trim();
-            const startCmd = `cd "${cwd}" && pm2 start npx --name "${name}" -- serve ${serveArgs}`;
-            console.log(`[PM2] Running: ${startCmd}`);
-            result = await runShell(startCmd);
+            // For static sites: npx serve . -s -l PORT
+            executable = 'npx';
+            args = finalCommand.replace('npx ', '').split(' ');
         } else if (finalCommand.startsWith('npm run')) {
-            // For npm scripts (Next.js, etc.)
-            const script = finalCommand.replace('npm run ', '').trim();
-            const startCmd = `cd "${cwd}" && PORT=${port} pm2 start npm --name "${name}" -- run ${script}`;
-            console.log(`[PM2] Running: ${startCmd}`);
-            result = await runShell(startCmd);
+            // For SSR apps: npm run start
+            executable = 'npm';
+            args = ['run', finalCommand.replace('npm run ', '').trim()];
         } else {
-            // Generic command - split into executable and args
+            // Generic command
             const parts = finalCommand.split(' ');
-            const executable = parts[0];
-            const args = parts.slice(1).join(' ');
-            const startCmd = `cd "${cwd}" && pm2 start ${executable} --name "${name}" -- ${args}`;
-            console.log(`[PM2] Running: ${startCmd}`);
-            result = await runShell(startCmd);
+            executable = parts[0];
+            args = parts.slice(1);
         }
 
-        if (!result.success) {
-            console.error(`[PM2] Failed to start ${name}:`, result.output);
+        console.log(`[Process] Spawning: ${executable} ${args.join(' ')}`);
+
+        // Spawn the process
+        const proc = Bun.spawn([executable, ...args], {
+            cwd,
+            env: { ...process.env, PORT: port.toString() },
+            stdout: 'pipe',
+            stderr: 'pipe',
+        });
+
+        // Store in memory
+        runningProcesses.set(name, { proc, port, pid: proc.pid });
+
+        // Save PID to file for persistence
+        ensurePidDir();
+        writeFileSync(getPidFile(name), JSON.stringify({ pid: proc.pid, port, cwd, command: finalCommand }));
+
+        console.log(`[Process] Started ${name} with PID ${proc.pid} on port ${port}`);
+
+        // Wait a bit to ensure it started
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Check if still running
+        const running = isProcessRunning(proc.pid);
+        console.log(`[Process] ${name} running check: ${running}`);
+
+        if (!running) {
+            // Try to get error output
+            const stderr = await new Response(proc.stderr).text();
+            console.error(`[Process] ${name} failed to start. Stderr:`, stderr);
             return false;
         }
 
-        console.log(`[PM2] PM2 command output:`, result.output);
-
-        // Save PM2 state
-        await runShell('pm2 save', true);
-
-        // Wait a bit and check if process is running
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        const status = await getProcessStatus(name);
-        console.log(`[PM2] Process ${name} status after 3s: ${status}`);
-
-        if (status !== 'online') {
-            // Get logs to see what went wrong
-            const logs = await getProcessLogs(name, 20);
-            console.error(`[PM2] Process not online. Logs:\n${logs}`);
-        }
-
-        return status === 'online';
-    } catch (error) {
-        console.error(`[PM2] Failed to start ${name}:`, error);
+        return true;
+    } catch (error: any) {
+        console.error(`[Process] Failed to start ${name}:`, error.message);
         return false;
     }
 }
 
 /**
- * Stop a PM2 process
+ * Stop a running process
  */
 export async function stopProcess(name: string): Promise<boolean> {
     try {
-        await runShell(`pm2 stop "${name}" 2>/dev/null`, true);
-        await runShell(`pm2 delete "${name}" 2>/dev/null`, true);
+        // Check in-memory first
+        const memProc = runningProcesses.get(name);
+        if (memProc) {
+            try {
+                memProc.proc.kill();
+            } catch { }
+            runningProcesses.delete(name);
+        }
+
+        // Also try PID file
+        const pidFile = getPidFile(name);
+        if (existsSync(pidFile)) {
+            try {
+                const data = JSON.parse(readFileSync(pidFile, 'utf-8'));
+                if (data.pid && isProcessRunning(data.pid)) {
+                    process.kill(data.pid, 'SIGTERM');
+                }
+            } catch { }
+            unlinkSync(pidFile);
+        }
+
         return true;
-    } catch {
+    } catch (error) {
+        console.error(`[Process] Error stopping ${name}:`, error);
         return true;
     }
 }
 
 /**
- * Restart a PM2 process
+ * Restart a process
  */
 export async function restartProcess(name: string): Promise<boolean> {
-    const result = await runShell(`pm2 restart "${name}"`, true);
-    return result.success;
+    const pidFile = getPidFile(name);
+    if (!existsSync(pidFile)) return false;
+
+    try {
+        const data = JSON.parse(readFileSync(pidFile, 'utf-8'));
+        await stopProcess(name);
+        return await startProcess(name, data.command, data.cwd, data.port);
+    } catch {
+        return false;
+    }
 }
 
 /**
  * Get status of a process
  */
 export async function getProcessStatus(name: string): Promise<'online' | 'stopped' | 'error' | 'not_found'> {
-    try {
-        const result = await runShell('pm2 jlist');
-        if (!result.success) return 'not_found';
-
-        const processes = JSON.parse(result.output);
-        const proc = processes.find((p: any) => p.name === name);
-
-        if (!proc) return 'not_found';
-
-        switch (proc.pm2_env?.status) {
-            case 'online': return 'online';
-            case 'stopped': return 'stopped';
-            case 'errored': return 'error';
-            default: return 'stopped';
-        }
-    } catch {
-        return 'not_found';
+    // Check in-memory
+    const memProc = runningProcesses.get(name);
+    if (memProc && isProcessRunning(memProc.pid)) {
+        return 'online';
     }
+
+    // Check PID file
+    const pidFile = getPidFile(name);
+    if (existsSync(pidFile)) {
+        try {
+            const data = JSON.parse(readFileSync(pidFile, 'utf-8'));
+            if (data.pid && isProcessRunning(data.pid)) {
+                return 'online';
+            }
+            return 'stopped';
+        } catch {
+            return 'error';
+        }
+    }
+
+    return 'not_found';
 }
 
 /**
- * Get logs from a process
+ * Get logs from a process (placeholder - would need log file handling)
  */
 export async function getProcessLogs(name: string, lines: number = 100): Promise<string> {
-    const result = await runShell(`pm2 logs "${name}" --lines ${lines} --nostream 2>&1`);
-    return result.output || '';
+    return '[Process logs not available in direct spawn mode]';
 }
 
 /**
  * List all managed processes
  */
-export async function listProcesses(): Promise<PM2Process[]> {
-    try {
-        const result = await runShell('pm2 jlist');
-        if (!result.success) return [];
+export async function listProcesses(): Promise<{ name: string; status: string; port: number }[]> {
+    ensurePidDir();
+    const result: { name: string; status: string; port: number }[] = [];
 
-        const processes = JSON.parse(result.output);
-        return processes.map((p: any) => ({
-            name: p.name,
-            pm_id: p.pm_id,
-            status: p.pm2_env?.status || 'unknown',
-            cpu: p.monit?.cpu || 0,
-            memory: p.monit?.memory || 0,
-        }));
-    } catch {
-        return [];
-    }
+    const { readdirSync } = require('fs');
+    try {
+        const files = readdirSync(PID_DIR);
+        for (const file of files) {
+            if (file.endsWith('.pid')) {
+                const name = file.replace('.pid', '');
+                const status = await getProcessStatus(name);
+                const pidFile = getPidFile(name);
+                try {
+                    const data = JSON.parse(readFileSync(pidFile, 'utf-8'));
+                    result.push({ name, status, port: data.port });
+                } catch {
+                    result.push({ name, status, port: 0 });
+                }
+            }
+        }
+    } catch { }
+
+    return result;
 }
 
 /**

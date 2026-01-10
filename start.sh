@@ -7,20 +7,13 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Check if already running
-if pm2 list | grep -q "clickdep"; then
-  echo "🔄 Restarting ClickDep..."
-  pm2 restart clickdep
-else
-  echo "🚀 Starting ClickDep..."
-  pm2 start server/src/index.ts \
-    --interpreter ~/.bun/bin/bun \
-    --name clickdep \
-    --time
-fi
+echo "🚀 Starting ClickDep..."
 
-# Save PM2 process list
-pm2 save
+# Ensure data directories exist
+mkdir -p data/repos
+mkdir -p data/logs
+mkdir -p data/pids
 
-# Show logs
-pm2 logs clickdep --lines 20
+# Start the server with Bun
+cd server
+exec bun run src/index.ts
