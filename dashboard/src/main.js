@@ -81,19 +81,19 @@ function renderProjectCard(project) {
     </div>
     
     <div class="project-card__actions">
-      <button class="btn btn--success btn--sm" onclick="event.stopPropagation(); deployProjectWithModal('${project.id}')">
+      <button class="btn btn--success btn--sm" onclick="event.stopPropagation(); window.deployProjectWithModal('${project.id}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 19V5M5 12l7-7 7 7"/>
         </svg>
         Deploy
       </button>
-      <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation(); showDetails('${project.id}')">
+      <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation(); window.showDetails('${project.id}')">
         Details
       </button>
     </div>
   `;
 
-  card.addEventListener('click', () => showDetails(project.id));
+  card.addEventListener('click', () => window.showDetails(project.id));
   return card;
 }
 
@@ -136,42 +136,32 @@ async function loadServerInfo() {
   }
 }
 
-// Track in-progress operations to prevent double-clicks
-let isAddingProject = false;
-let isDeploying = false;
-
 async function addProject(name, githubUrl, branch) {
-  if (isAddingProject) {
-    console.log('Add already in progress');
-    return;
-  }
-
-  isAddingProject = true;
-
-  // Disable the submit button
   const submitBtn = document.querySelector('#add-project-form button[type="submit"]');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Adding...';
-  }
 
   try {
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Adding...';
+    }
+
+    console.log('[Dashboard] Adding project:', name);
     const project = await api('/projects', {
       method: 'POST',
       body: { name, github_url: githubUrl, branch },
     });
 
+    console.log('[Dashboard] Project created:', project.id);
     projects.unshift(project);
     renderProjects();
     closeModals();
 
-    // Auto-deploy with live modal
-    deployProjectWithModal(project.id);
+    // Auto-deploy
+    window.deployProjectWithModal(project.id);
   } catch (err) {
-    console.error('Add project error:', err);
+    console.error('[Dashboard] Add project error:', err);
     alert(`Failed to add project: ${err.message}`);
   } finally {
-    isAddingProject = false;
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Add Project';
@@ -181,18 +171,18 @@ async function addProject(name, githubUrl, branch) {
 
 // Deploy with live status modal
 async function deployProjectWithModal(id) {
-  // Debounce - prevent multiple deploys
-  if (isDeploying) {
-    console.log('Deploy already in progress');
-    return;
-  }
-  isDeploying = true;
+  console.log('[Dashboard] Deploy requested:', id);
 
-  // Find project name
-  const project = projects.find(p => p.id === id);
+  // Find project
+  let project = projects.find(p => p.id === id);
   if (!project) {
-    isDeploying = false;
-    return;
+    // Try refreshing projects list
+    await loadProjects();
+    project = projects.find(p => p.id === id);
+    if (!project) {
+      console.error('[Dashboard] Project not found:', id);
+      return;
+    }
   }
 
   // Show deployment modal
@@ -219,9 +209,14 @@ async function deployProjectWithModal(id) {
   `;
   elements.detailModal.classList.remove('hidden');
 
-  // Start deployment in background
+  // Start deployment
+  console.log('[Dashboard] Starting deployment API call');
   api(`/projects/${id}/deploy`, { method: 'POST' }).catch(err => {
-    document.getElementById('deploy-logs').textContent += `\n\n❌ Error: ${err.message}`;
+    console.error('[Dashboard] Deploy API error:', err);
+    const logsEl = document.getElementById('deploy-logs');
+    if (logsEl) {
+      logsEl.textContent += `\n\n❌ Error: ${err.message}`;
+    }
   });
 
   // Poll for status updates
@@ -240,36 +235,35 @@ async function deployProjectWithModal(id) {
       // Update logs
       if (latest && latest.log !== lastLog) {
         lastLog = latest.log || '';
-        document.getElementById('deploy-logs').textContent = lastLog;
-        // Auto-scroll
         const logsEl = document.getElementById('deploy-logs');
-        logsEl.scrollTop = logsEl.scrollHeight;
+        if (logsEl) {
+          logsEl.textContent = lastLog;
+          logsEl.scrollTop = logsEl.scrollHeight;
+        }
       }
 
       // If still building, continue polling
       if (proj.status === 'building') {
         deploymentPollingId = setTimeout(pollStatus, 1000);
       } else {
-        // Deployment finished - reset flag
-        isDeploying = false;
-
-        // Refresh projects list
+        // Deployment finished
         await loadProjects();
 
-        // Show final status
         if (proj.status === 'running') {
-          document.getElementById('deploy-logs').textContent += '\n\n✅ Deployment successful! Site is now live.';
+          const logsEl = document.getElementById('deploy-logs');
+          if (logsEl) {
+            logsEl.textContent += '\n\n✅ Deployment successful! Site is now live.';
+          }
         } else if (proj.status === 'error') {
           updateDeployStep('running', 'error');
         }
       }
     } catch (err) {
-      console.error('Polling error:', err);
-      isDeploying = false;
+      console.error('[Dashboard] Polling error:', err);
     }
   };
 
-  // Start polling after a short delay
+  // Start polling
   setTimeout(pollStatus, 500);
 }
 
@@ -281,34 +275,43 @@ function updateDeployStep(stepId, state) {
   if (state) step.classList.add(state);
 }
 
-async function deployProject(id) {
-  deployProjectWithModal(id);
-}
-
 async function stopProject(id) {
+  console.log('[Dashboard] Stop requested:', id);
   try {
     await api(`/projects/${id}/stop`, { method: 'POST' });
+    console.log('[Dashboard] Stop successful');
     await loadProjects();
-    if (currentProject?.id === id) showDetails(id);
+    if (currentProject?.id === id) {
+      window.showDetails(id);
+    }
   } catch (err) {
+    console.error('[Dashboard] Stop error:', err);
     alert(`Stop failed: ${err.message}`);
   }
 }
 
 async function deleteProject(id) {
-  if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
+  console.log('[Dashboard] Delete requested:', id);
+
+  if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) {
+    return;
+  }
 
   try {
     await api(`/projects/${id}`, { method: 'DELETE' });
+    console.log('[Dashboard] Delete successful');
     projects = projects.filter(p => p.id !== id);
     renderProjects();
     closeModals();
   } catch (err) {
+    console.error('[Dashboard] Delete error:', err);
     alert(`Delete failed: ${err.message}`);
   }
 }
 
 async function showDetails(id) {
+  console.log('[Dashboard] Show details:', id);
+
   // Stop any existing polling
   if (deploymentPollingId) {
     clearTimeout(deploymentPollingId);
@@ -321,8 +324,11 @@ async function showDetails(id) {
     currentProject = project;
 
     elements.detailTitle.textContent = project.name;
-
     const latestDeployment = deployments[0];
+
+    // Determine button states
+    const canDeploy = project.status !== 'running' && project.status !== 'building';
+    const canStop = project.status === 'running';
 
     elements.detailBody.innerHTML = `
       <div class="detail-section">
@@ -377,8 +383,8 @@ async function showDetails(id) {
       <div class="detail-actions">
         <button 
           class="btn btn--success" 
-          onclick="deployProjectWithModal('${project.id}')"
-          ${project.status === 'running' || project.status === 'building' ? 'disabled' : ''}
+          onclick="window.deployProjectWithModal('${project.id}')"
+          ${!canDeploy ? 'disabled' : ''}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 19V5M5 12l7-7 7 7"/>
@@ -387,17 +393,18 @@ async function showDetails(id) {
         </button>
         <button 
           class="btn btn--ghost" 
-          onclick="stopProject('${project.id}')"
-          ${project.status !== 'running' ? 'disabled' : ''}
+          onclick="window.stopProject('${project.id}')"
+          ${!canStop ? 'disabled' : ''}
         >
           Stop
         </button>
-        <button class="btn btn--danger" onclick="deleteProject('${project.id}')">Delete</button>
+        <button class="btn btn--danger" onclick="window.deleteProject('${project.id}')">Delete</button>
       </div>
     `;
 
     elements.detailModal.classList.remove('hidden');
   } catch (err) {
+    console.error('[Dashboard] Show details error:', err);
     alert(`Failed to load details: ${err.message}`);
   }
 }
@@ -417,7 +424,6 @@ function closeModals() {
   elements.addForm.reset();
   currentProject = null;
 
-  // Stop polling when closing
   if (deploymentPollingId) {
     clearTimeout(deploymentPollingId);
     deploymentPollingId = null;
@@ -469,17 +475,14 @@ elements.addForm.addEventListener('submit', (e) => {
   addProject(name, githubUrl, branch);
 });
 
-// Close modals on backdrop click or close button
 document.querySelectorAll('.modal__backdrop, [data-close-modal]').forEach(el => {
   el.addEventListener('click', closeModals);
 });
 
-// Close modals on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeModals();
 });
 
-// Prevent modal content clicks from closing
 document.querySelectorAll('.modal__content').forEach(el => {
   el.addEventListener('click', (e) => e.stopPropagation());
 });
@@ -500,5 +503,6 @@ window.showDetails = showDetails;
 // Init
 // =========================================
 
+console.log('[Dashboard] Initializing...');
 loadServerInfo();
 loadProjects();
