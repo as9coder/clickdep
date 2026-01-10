@@ -65,29 +65,34 @@ app.post('/projects', async (c) => {
             return c.json({ error: 'name and github_url are required' }, 400);
         }
 
-        // Validate name (alphanumeric + hyphens only)
-        if (!/^[a-z0-9-]+$/.test(name)) {
-            return c.json({ error: 'name must be lowercase alphanumeric with hyphens' }, 400);
+        // Sanitize name: lowercase, replace spaces with hyphens, remove invalid chars
+        const sanitizedName = name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, ''); // Keep hyphens
+
+        if (!sanitizedName || sanitizedName.length < 1) {
+            return c.json({ error: 'Invalid project name' }, 400);
         }
 
         // Check if project name already exists
-        const existing = listProjects().find(p => p.name === name);
+        const existing = listProjects().find(p => p.name === sanitizedName);
         if (existing) {
             return c.json({ error: 'A project with this name already exists' }, 400);
         }
 
         // Lock to prevent duplicate creates
-        if (!acquireLock(name, 'create')) {
+        if (!acquireLock(sanitizedName, 'create')) {
             return c.json({ error: 'Project creation already in progress' }, 409);
         }
 
         try {
-            console.log(`[API] Creating project: ${name}`);
-            const project = await createProject(name, github_url, branch || 'main');
-            console.log(`[API] Project created: ${name}`);
+            console.log(`[API] Creating project: ${sanitizedName}`);
+            const project = await createProject(sanitizedName, github_url, branch || 'main');
+            console.log(`[API] Project created: ${sanitizedName}`);
             return c.json(project, 201);
         } finally {
-            releaseLock(name, 'create');
+            releaseLock(sanitizedName, 'create');
         }
     } catch (error: any) {
         console.error(`[API] Create project error:`, error.message);
