@@ -7,8 +7,8 @@ const runningProcesses: Map<string, { proc: any; port: number; pid: number }> = 
 // PID file directory
 const PID_DIR = join(import.meta.dir, '../../../data/pids');
 
-// Static server script path
-const STATIC_SERVER = join(import.meta.dir, 'serve-static.ts');
+// Static server script path (one level up from services/)
+const STATIC_SERVER = join(import.meta.dir, '../serve-static.ts');
 
 /**
  * Ensure PID directory exists
