@@ -14,13 +14,13 @@ const FRAMEWORKS: Record<string, FrameworkConfig> = {
         name: 'Next.js',
         buildCommand: 'npm run build',
         startCommand: 'npm run start',
-        outputDir: '.next',
+        outputDir: '.',  // Next.js runs from project root
         isStatic: false,
     },
     vite: {
         name: 'Vite',
         buildCommand: 'npm run build',
-        startCommand: 'npx serve dist -s -l $PORT',
+        startCommand: 'npx serve . -s -l $PORT',  // Serve current dir (we cd into dist)
         outputDir: 'dist',
         isStatic: true,
     },
@@ -28,13 +28,13 @@ const FRAMEWORKS: Record<string, FrameworkConfig> = {
         name: 'Remix',
         buildCommand: 'npm run build',
         startCommand: 'npm run start',
-        outputDir: 'build',
+        outputDir: '.',  // Remix runs from project root
         isStatic: false,
     },
     astro: {
         name: 'Astro',
         buildCommand: 'npm run build',
-        startCommand: 'npx serve dist -s -l $PORT',
+        startCommand: 'npx serve . -s -l $PORT',  // Serve current dir (we cd into dist)
         outputDir: 'dist',
         isStatic: true,
     },
@@ -42,7 +42,7 @@ const FRAMEWORKS: Record<string, FrameworkConfig> = {
         name: 'Nuxt',
         buildCommand: 'npm run build',
         startCommand: 'npm run start',
-        outputDir: '.output',
+        outputDir: '.',  // Nuxt runs from project root
         isStatic: false,
     },
     static: {

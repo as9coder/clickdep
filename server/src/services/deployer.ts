@@ -121,18 +121,27 @@ export async function deployProject(id: string): Promise<Deployment> {
         // Stop old process
         await stopProcess(project.name);
 
+        // Determine the correct start path
+        let startPath = repoPath;
+        if (project.output_dir && project.output_dir !== '.') {
+            startPath = `${repoPath}/${project.output_dir}`;
+        }
+
+        console.log(`[Deploy] Starting ${project.name} with: ${project.start_command} in ${startPath}`);
+
         // Start new process
         const started = await startProcess(
             project.name,
             project.start_command!,
-            repoPath,
+            startPath,
             project.port!
         );
 
         if (!started) {
+            const errorLog = buildResult.log + '\n\n❌ Failed to start process. Check PM2 logs for details.';
             db.run(
                 "UPDATE deployments SET status = 'failed', finished_at = unixepoch(), log = ? WHERE id = ?",
-                [buildResult.log + '\n❌ Failed to start process', deploymentId]
+                [errorLog, deploymentId]
             );
             db.run("UPDATE projects SET status = 'error', updated_at = unixepoch() WHERE id = ?", [id]);
             return getDeployment(deploymentId)!;

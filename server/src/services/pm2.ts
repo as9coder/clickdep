@@ -44,47 +44,61 @@ export async function startProcess(
         await stopProcess(name);
 
         // Replace $PORT placeholder
-        const finalCommand = command.replace('$PORT', port.toString());
+        const finalCommand = command.replace(/\$PORT/g, port.toString());
+
+        console.log(`[PM2] Starting ${name}: ${finalCommand} in ${cwd}`);
+
+        let result;
 
         // For static sites using npx serve
-        if (finalCommand.startsWith('npx serve')) {
-            const serveArgs = finalCommand.replace('npx serve', '').trim();
-            const result = await runShell(
-                `cd "${cwd}" && pm2 start "npx" --name "${name}" -- serve ${serveArgs}`,
-                true
-            );
-            if (!result.success) {
-                console.error(`Failed to start ${name}:`, result.output);
-                return false;
+        if (finalCommand.includes('npx serve') || finalCommand.includes('serve ')) {
+            // Extract the serve arguments
+            // e.g., "npx serve dist -s -l 3001" -> serve dist in the right directory with port
+            const serveMatch = finalCommand.match(/serve\s+(\S+)\s+(.+)/);
+            let serveDir = '.';
+            let serveArgs = `-s -l ${port}`;
+
+            if (serveMatch) {
+                serveDir = serveMatch[1];
+                serveArgs = serveMatch[2];
             }
+
+            // Use the ecosystem approach for static serving
+            // Start serve via ecosystem file for better reliability
+            const startCmd = `cd "${cwd}" && PORT=${port} pm2 start "npx serve ${serveDir} ${serveArgs}" --name "${name}" --cwd "${cwd}"`;
+            console.log(`[PM2] Running: ${startCmd}`);
+            result = await runShell(startCmd);
         } else if (finalCommand.startsWith('npm run')) {
             // For npm scripts (Next.js, etc.)
-            const script = finalCommand.replace('npm run ', '');
-            const result = await runShell(
-                `cd "${cwd}" && pm2 start npm --name "${name}" -- run ${script}`,
-                true
-            );
-            if (!result.success) {
-                console.error(`Failed to start ${name}:`, result.output);
-                return false;
-            }
+            const script = finalCommand.replace('npm run ', '').trim();
+            const startCmd = `cd "${cwd}" && PORT=${port} pm2 start npm --name "${name}" -- run ${script}`;
+            console.log(`[PM2] Running: ${startCmd}`);
+            result = await runShell(startCmd);
         } else {
             // Generic command
-            const result = await runShell(
-                `cd "${cwd}" && pm2 start "${finalCommand}" --name "${name}"`,
-                true
-            );
-            if (!result.success) {
-                console.error(`Failed to start ${name}:`, result.output);
-                return false;
-            }
+            const startCmd = `cd "${cwd}" && pm2 start "${finalCommand}" --name "${name}"`;
+            console.log(`[PM2] Running: ${startCmd}`);
+            result = await runShell(startCmd);
         }
+
+        if (!result.success) {
+            console.error(`[PM2] Failed to start ${name}:`, result.output);
+            return false;
+        }
+
+        console.log(`[PM2] Started ${name} successfully`);
 
         // Save PM2 state
         await runShell('pm2 save', true);
-        return true;
+
+        // Wait a bit and check if process is running
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const status = await getProcessStatus(name);
+        console.log(`[PM2] Process ${name} status: ${status}`);
+
+        return status === 'online';
     } catch (error) {
-        console.error(`Failed to start ${name}:`, error);
+        console.error(`[PM2] Failed to start ${name}:`, error);
         return false;
     }
 }
@@ -94,8 +108,8 @@ export async function startProcess(
  */
 export async function stopProcess(name: string): Promise<boolean> {
     try {
-        await runShell(`pm2 stop "${name}"`, true);
-        await runShell(`pm2 delete "${name}"`, true);
+        await runShell(`pm2 stop "${name}" 2>/dev/null`, true);
+        await runShell(`pm2 delete "${name}" 2>/dev/null`, true);
         return true;
     } catch {
         return true;
@@ -138,7 +152,7 @@ export async function getProcessStatus(name: string): Promise<'online' | 'stoppe
  * Get logs from a process
  */
 export async function getProcessLogs(name: string, lines: number = 100): Promise<string> {
-    const result = await runShell(`pm2 logs "${name}" --lines ${lines} --nostream`);
+    const result = await runShell(`pm2 logs "${name}" --lines ${lines} --nostream 2>&1`);
     return result.output || '';
 }
 
