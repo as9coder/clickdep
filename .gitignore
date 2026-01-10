@@ -1,0 +1,24 @@
+# ClickDep Data
+data/
+
+# Dependencies
+node_modules/
+
+# Build output
+dashboard/dist/
+
+# Logs
+*.log
+pm2.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClickDep — Self-Hosted Deployments</title>
+  <meta name="description" content="One-click deployments for your GitHub projects">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__brand">
+        <svg class="header__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        <h1 class="header__title">ClickDep</h1>
+      </div>
+      <div class="header__info">
+        <span id="server-ip" class="badge badge--neutral">Loading...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <h2 class="toolbar__title">Projects</h2>
+        <button id="add-project-btn" class="btn btn--primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add Project
+        </button>
+      </div>
+
+      <!-- Projects Grid -->
+      <div id="projects-grid" class="projects-grid">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <h3>No projects yet</h3>
+        <p>Add your first GitHub project to get started</p>
+      </div>
+    </main>
+
+    <!-- Add Project Modal -->
+    <div id="add-modal" class="modal hidden">
+      <div class="modal__backdrop"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h3>Add New Project</h3>
+          <button class="modal__close" data-close-modal>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form id="add-project-form" class="modal__body">
+          <div class="form-group">
+            <label for="project-name">Project Name</label>
+            <input type="text" id="project-name" placeholder="my-portfolio" pattern="[a-z0-9-]+" required>
+            <span class="form-hint">Lowercase letters, numbers, and hyphens only</span>
+          </div>
+          <div class="form-group">
+            <label for="github-url">GitHub URL</label>
+            <input type="url" id="github-url" placeholder="https://github.com/user/repo" required>
+          </div>
+          <div class="form-group">
+            <label for="branch">Branch</label>
+            <input type="text" id="branch" placeholder="main" value="main">
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="btn btn--ghost" data-close-modal>Cancel</button>
+            <button type="submit" class="btn btn--primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Add & Deploy
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Project Detail Modal -->
+    <div id="detail-modal" class="modal hidden">
+      <div class="modal__backdrop"></div>
+      <div class="modal__content modal__content--large">
+        <div class="modal__header">
+          <h3 id="detail-title">Project Details</h3>
+          <button class="modal__close" data-close-modal>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div id="detail-body" class="modal__body">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
