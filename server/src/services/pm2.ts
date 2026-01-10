@@ -7,6 +7,9 @@ const runningProcesses: Map<string, { proc: any; port: number; pid: number }> = 
 // PID file directory
 const PID_DIR = join(import.meta.dir, '../../../data/pids');
 
+// Static server script path
+const STATIC_SERVER = join(import.meta.dir, 'serve-static.ts');
+
 /**
  * Ensure PID directory exists
  */
@@ -37,7 +40,7 @@ function isProcessRunning(pid: number): boolean {
 }
 
 /**
- * Start a process for serving static files
+ * Start a process for serving static files or running SSR apps
  */
 export async function startProcess(
     name: string,
@@ -49,35 +52,34 @@ export async function startProcess(
         // Stop existing process
         await stopProcess(name);
 
-        // Replace $PORT placeholder
-        const finalCommand = command.replace(/\$PORT/g, port.toString());
+        console.log(`[Process] Starting ${name} on port ${port} in ${cwd}`);
 
-        console.log(`[Process] Starting ${name}: ${finalCommand} in ${cwd}`);
+        let proc;
+        let spawnArgs: string[];
+        let spawnCwd = cwd;
 
-        // Parse the command
-        let executable: string;
-        let args: string[];
-
-        if (finalCommand.includes('npx serve')) {
-            // For static sites: npx serve . -s -l PORT
-            executable = 'npx';
-            args = finalCommand.replace('npx ', '').split(' ');
-        } else if (finalCommand.startsWith('npm run')) {
-            // For SSR apps: npm run start
-            executable = 'npm';
-            args = ['run', finalCommand.replace('npm run ', '').trim()];
+        // Determine how to run
+        if (command.includes('npx serve') || command.includes('serve .')) {
+            // Static site: use our Bun static server
+            console.log(`[Process] Using Bun static server for ${name}`);
+            spawnArgs = ['bun', 'run', STATIC_SERVER, cwd, port.toString()];
+            spawnCwd = join(import.meta.dir, '../../..'); // Run from server root
+        } else if (command.startsWith('npm run')) {
+            // SSR app (Next.js, etc.)
+            const script = command.replace('npm run ', '').trim();
+            console.log(`[Process] Using npm for ${name}: npm run ${script}`);
+            spawnArgs = ['npm', 'run', script];
         } else {
             // Generic command
-            const parts = finalCommand.split(' ');
-            executable = parts[0];
-            args = parts.slice(1);
+            const parts = command.replace(/\$PORT/g, port.toString()).split(' ');
+            spawnArgs = parts;
         }
 
-        console.log(`[Process] Spawning: ${executable} ${args.join(' ')}`);
+        console.log(`[Process] Spawning: ${spawnArgs.join(' ')} in ${spawnCwd}`);
 
         // Spawn the process
-        const proc = Bun.spawn([executable, ...args], {
-            cwd,
+        proc = Bun.spawn(spawnArgs, {
+            cwd: spawnCwd,
             env: { ...process.env, PORT: port.toString() },
             stdout: 'pipe',
             stderr: 'pipe',
@@ -88,12 +90,18 @@ export async function startProcess(
 
         // Save PID to file for persistence
         ensurePidDir();
-        writeFileSync(getPidFile(name), JSON.stringify({ pid: proc.pid, port, cwd, command: finalCommand }));
+        writeFileSync(getPidFile(name), JSON.stringify({
+            pid: proc.pid,
+            port,
+            cwd,
+            command,
+            startedAt: Date.now()
+        }));
 
         console.log(`[Process] Started ${name} with PID ${proc.pid} on port ${port}`);
 
         // Wait a bit to ensure it started
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Check if still running
         const running = isProcessRunning(proc.pid);
@@ -101,8 +109,12 @@ export async function startProcess(
 
         if (!running) {
             // Try to get error output
-            const stderr = await new Response(proc.stderr).text();
-            console.error(`[Process] ${name} failed to start. Stderr:`, stderr);
+            try {
+                const stderr = await new Response(proc.stderr).text();
+                const stdout = await new Response(proc.stdout).text();
+                console.error(`[Process] ${name} failed. Stderr:`, stderr);
+                console.error(`[Process] ${name} Stdout:`, stdout);
+            } catch { }
             return false;
         }
 
@@ -134,9 +146,17 @@ export async function stopProcess(name: string): Promise<boolean> {
                 const data = JSON.parse(readFileSync(pidFile, 'utf-8'));
                 if (data.pid && isProcessRunning(data.pid)) {
                     process.kill(data.pid, 'SIGTERM');
+                    // Give it a moment to die
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    // Force kill if still alive
+                    if (isProcessRunning(data.pid)) {
+                        process.kill(data.pid, 'SIGKILL');
+                    }
                 }
             } catch { }
-            unlinkSync(pidFile);
+            try {
+                unlinkSync(pidFile);
+            } catch { }
         }
 
         return true;
@@ -190,10 +210,10 @@ export async function getProcessStatus(name: string): Promise<'online' | 'stoppe
 }
 
 /**
- * Get logs from a process (placeholder - would need log file handling)
+ * Get logs from a process (placeholder)
  */
 export async function getProcessLogs(name: string, lines: number = 100): Promise<string> {
-    return '[Process logs not available in direct spawn mode]';
+    return '[Logs stored in deployment history]';
 }
 
 /**
