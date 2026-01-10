@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { $ } from 'bun';
 
 export interface FrameworkConfig {
     name: string;
@@ -89,6 +88,35 @@ export function detectFramework(repoPath: string): FrameworkConfig {
 }
 
 /**
+ * Run a shell command and return the output
+ */
+async function runCommand(cmd: string, cwd: string): Promise<{ success: boolean; output: string }> {
+    try {
+        const proc = Bun.spawn(['bash', '-c', cmd], {
+            cwd,
+            stdout: 'pipe',
+            stderr: 'pipe',
+        });
+
+        const stdout = await new Response(proc.stdout).text();
+        const stderr = await new Response(proc.stderr).text();
+        const exitCode = await proc.exited;
+
+        const output = stdout + (stderr ? `\n${stderr}` : '');
+
+        return {
+            success: exitCode === 0,
+            output: output || `Exit code: ${exitCode}`,
+        };
+    } catch (error: any) {
+        return {
+            success: false,
+            output: `Error: ${error.message}`,
+        };
+    }
+}
+
+/**
  * Build a project
  */
 export async function buildProject(
@@ -100,14 +128,24 @@ export async function buildProject(
     try {
         // Install dependencies
         logs.push('📦 Installing dependencies...');
-        const installResult = await $`cd ${repoPath} && npm install`.text();
-        logs.push(installResult);
+        const installResult = await runCommand('npm install', repoPath);
+        logs.push(installResult.output);
+
+        if (!installResult.success) {
+            logs.push('\n❌ npm install failed');
+            return { success: false, log: logs.join('\n') };
+        }
 
         // Run build if command exists
         if (buildCommand && buildCommand.trim()) {
             logs.push(`\n🔨 Building: ${buildCommand}`);
-            const buildResult = await $`cd ${repoPath} && ${buildCommand.split(' ')}`.text();
-            logs.push(buildResult);
+            const buildResult = await runCommand(buildCommand, repoPath);
+            logs.push(buildResult.output);
+
+            if (!buildResult.success) {
+                logs.push('\n❌ Build command failed');
+                return { success: false, log: logs.join('\n') };
+            }
         }
 
         logs.push('\n✅ Build completed successfully!');
