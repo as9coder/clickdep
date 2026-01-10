@@ -13,6 +13,29 @@ import { getProcessStatus, getProcessLogs } from '../services/pm2';
 
 const app = new Hono();
 
+// Track operations in progress to prevent race conditions
+const operationsInProgress: Set<string> = new Set();
+
+/**
+ * Lock an operation for a project
+ */
+function acquireLock(projectId: string, operation: string): boolean {
+    const key = `${projectId}:${operation}`;
+    if (operationsInProgress.has(key)) {
+        return false;
+    }
+    operationsInProgress.add(key);
+    return true;
+}
+
+/**
+ * Release a lock for a project
+ */
+function releaseLock(projectId: string, operation: string): void {
+    const key = `${projectId}:${operation}`;
+    operationsInProgress.delete(key);
+}
+
 // List all projects
 app.get('/projects', (c) => {
     const projects = listProjects();
@@ -47,40 +70,106 @@ app.post('/projects', async (c) => {
             return c.json({ error: 'name must be lowercase alphanumeric with hyphens' }, 400);
         }
 
-        const project = await createProject(name, github_url, branch || 'main');
-        return c.json(project, 201);
+        // Check if project name already exists
+        const existing = listProjects().find(p => p.name === name);
+        if (existing) {
+            return c.json({ error: 'A project with this name already exists' }, 400);
+        }
+
+        // Lock to prevent duplicate creates
+        if (!acquireLock(name, 'create')) {
+            return c.json({ error: 'Project creation already in progress' }, 409);
+        }
+
+        try {
+            console.log(`[API] Creating project: ${name}`);
+            const project = await createProject(name, github_url, branch || 'main');
+            console.log(`[API] Project created: ${name}`);
+            return c.json(project, 201);
+        } finally {
+            releaseLock(name, 'create');
+        }
     } catch (error: any) {
+        console.error(`[API] Create project error:`, error.message);
         return c.json({ error: error.message }, 500);
     }
 });
 
 // Delete project
 app.delete('/projects/:id', async (c) => {
+    const id = c.req.param('id');
+
     try {
-        await deleteProject(c.req.param('id'));
-        return c.json({ success: true });
+        // Lock to prevent concurrent deletions
+        if (!acquireLock(id, 'delete')) {
+            return c.json({ error: 'Delete already in progress' }, 409);
+        }
+
+        try {
+            console.log(`[API] Deleting project: ${id}`);
+            await deleteProject(id);
+            console.log(`[API] Project deleted: ${id}`);
+            return c.json({ success: true });
+        } finally {
+            releaseLock(id, 'delete');
+        }
     } catch (error: any) {
+        console.error(`[API] Delete project error:`, error.message);
         return c.json({ error: error.message }, 500);
     }
 });
 
 // Deploy project (build & start)
 app.post('/projects/:id/deploy', async (c) => {
+    const id = c.req.param('id');
+    const project = getProject(id);
+
+    if (!project) {
+        return c.json({ error: 'Project not found' }, 404);
+    }
+
+    // Check if project is already building
+    if (project.status === 'building') {
+        return c.json({ error: 'Deployment already in progress' }, 409);
+    }
+
+    // Lock to prevent concurrent deploys
+    if (!acquireLock(id, 'deploy')) {
+        return c.json({ error: 'Deployment already in progress' }, 409);
+    }
+
     try {
-        const deployment = await deployProject(c.req.param('id'));
+        console.log(`[API] Deploying project: ${project.name}`);
+        const deployment = await deployProject(id);
+        console.log(`[API] Deployment complete: ${project.name} - ${deployment.status}`);
         return c.json(deployment);
     } catch (error: any) {
+        console.error(`[API] Deploy project error:`, error.message);
         return c.json({ error: error.message }, 500);
+    } finally {
+        releaseLock(id, 'deploy');
     }
 });
 
 // Stop project
 app.post('/projects/:id/stop', async (c) => {
+    const id = c.req.param('id');
+
+    // Lock to prevent concurrent stop operations
+    if (!acquireLock(id, 'stop')) {
+        return c.json({ error: 'Stop already in progress' }, 409);
+    }
+
     try {
-        await stopProjectProcess(c.req.param('id'));
+        console.log(`[API] Stopping project: ${id}`);
+        await stopProjectProcess(id);
+        console.log(`[API] Project stopped: ${id}`);
         return c.json({ success: true });
     } catch (error: any) {
+        console.error(`[API] Stop project error:`, error.message);
         return c.json({ error: error.message }, 500);
+    } finally {
+        releaseLock(id, 'stop');
     }
 });
 

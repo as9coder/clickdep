@@ -136,7 +136,25 @@ async function loadServerInfo() {
   }
 }
 
+// Track in-progress operations to prevent double-clicks
+let isAddingProject = false;
+let isDeploying = false;
+
 async function addProject(name, githubUrl, branch) {
+  if (isAddingProject) {
+    console.log('Add already in progress');
+    return;
+  }
+
+  isAddingProject = true;
+
+  // Disable the submit button
+  const submitBtn = document.querySelector('#add-project-form button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+  }
+
   try {
     const project = await api('/projects', {
       method: 'POST',
@@ -150,15 +168,32 @@ async function addProject(name, githubUrl, branch) {
     // Auto-deploy with live modal
     deployProjectWithModal(project.id);
   } catch (err) {
+    console.error('Add project error:', err);
     alert(`Failed to add project: ${err.message}`);
+  } finally {
+    isAddingProject = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add Project';
+    }
   }
 }
 
 // Deploy with live status modal
 async function deployProjectWithModal(id) {
+  // Debounce - prevent multiple deploys
+  if (isDeploying) {
+    console.log('Deploy already in progress');
+    return;
+  }
+  isDeploying = true;
+
   // Find project name
   const project = projects.find(p => p.id === id);
-  if (!project) return;
+  if (!project) {
+    isDeploying = false;
+    return;
+  }
 
   // Show deployment modal
   elements.detailTitle.textContent = `Deploying: ${project.name}`;
@@ -215,7 +250,10 @@ async function deployProjectWithModal(id) {
       if (proj.status === 'building') {
         deploymentPollingId = setTimeout(pollStatus, 1000);
       } else {
-        // Deployment finished - refresh projects list
+        // Deployment finished - reset flag
+        isDeploying = false;
+
+        // Refresh projects list
         await loadProjects();
 
         // Show final status
@@ -227,6 +265,7 @@ async function deployProjectWithModal(id) {
       }
     } catch (err) {
       console.error('Polling error:', err);
+      isDeploying = false;
     }
   };
 
