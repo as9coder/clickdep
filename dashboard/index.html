@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,19 @@
   <meta name="description" content="One-click deployments for your GitHub projects">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/src/styles.css">
 </head>
+
 <body>
   <div id="app">
     <!-- Header -->
     <header class="header">
       <div class="header__brand">
         <svg class="header__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
         </svg>
         <h1 class="header__title">ClickDep</h1>
       </div>
@@ -30,12 +34,16 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <h2 class="toolbar__title">Projects</h2>
-        <button id="add-project-btn" class="btn btn--primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Add Project
-        </button>
+        <div class="toolbar__actions">
+          <button id="stop-all-btn" class="btn btn--ghost">Stop All</button>
+          <button id="delete-all-btn" class="btn btn--danger">Delete All</button>
+          <button id="add-project-btn" class="btn btn--primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add Project
+          </button>
+        </div>
       </div>
 
       <!-- Projects Grid -->
@@ -46,7 +54,7 @@
       <!-- Empty State -->
       <div id="empty-state" class="empty-state hidden">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
         <h3>No projects yet</h3>
         <p>Add your first GitHub project to get started</p>
@@ -61,7 +69,7 @@
           <h3>Add New Project</h3>
           <button class="modal__close" data-close-modal>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -83,7 +91,7 @@
             <button type="button" class="btn btn--ghost" data-close-modal>Cancel</button>
             <button type="submit" class="btn btn--primary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
+                <path d="M12 5v14M5 12h14" />
               </svg>
               Add & Deploy
             </button>
@@ -100,7 +108,7 @@
           <h3 id="detail-title">Project Details</h3>
           <button class="modal__close" data-close-modal>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -113,4 +121,5 @@
 
   <script type="module" src="/src/main.js"></script>
 </body>
+
 </html>

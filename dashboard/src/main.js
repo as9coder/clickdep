@@ -15,6 +15,8 @@ const elements = {
   projectsGrid: document.getElementById('projects-grid'),
   emptyState: document.getElementById('empty-state'),
   addBtn: document.getElementById('add-project-btn'),
+  stopAllBtn: document.getElementById('stop-all-btn'),
+  deleteAllBtn: document.getElementById('delete-all-btn'),
   addModal: document.getElementById('add-modal'),
   addForm: document.getElementById('add-project-form'),
   detailModal: document.getElementById('detail-modal'),
@@ -466,6 +468,51 @@ function getStatusClass(status) {
 // =========================================
 
 elements.addBtn.addEventListener('click', openAddModal);
+
+// Stop All button
+elements.stopAllBtn.addEventListener('click', async () => {
+  if (!confirm('Stop all running projects?')) return;
+
+  elements.stopAllBtn.disabled = true;
+  elements.stopAllBtn.textContent = 'Stopping...';
+
+  try {
+    const result = await api('/projects/stop-all', { method: 'POST' });
+    console.log('[Dashboard] Stop all result:', result);
+    await loadProjects();
+    alert(`Stopped ${result.stopped} projects`);
+  } catch (err) {
+    console.error('[Dashboard] Stop all error:', err);
+    alert(`Failed to stop all: ${err.message}`);
+  } finally {
+    elements.stopAllBtn.disabled = false;
+    elements.stopAllBtn.textContent = 'Stop All';
+  }
+});
+
+// Delete All button
+elements.deleteAllBtn.addEventListener('click', async () => {
+  if (!confirm('DELETE ALL PROJECTS? This cannot be undone!')) return;
+  if (!confirm('Are you REALLY sure? All projects and their deployments will be permanently deleted.')) return;
+
+  elements.deleteAllBtn.disabled = true;
+  elements.deleteAllBtn.textContent = 'Deleting...';
+
+  try {
+    const result = await api('/projects/delete-all', { method: 'POST' });
+    console.log('[Dashboard] Delete all result:', result);
+    projects = [];
+    renderProjects();
+    closeModals();
+    alert(`Deleted ${result.deleted} projects`);
+  } catch (err) {
+    console.error('[Dashboard] Delete all error:', err);
+    alert(`Failed to delete all: ${err.message}`);
+  } finally {
+    elements.deleteAllBtn.disabled = false;
+    elements.deleteAllBtn.textContent = 'Delete All';
+  }
+});
 
 elements.addForm.addEventListener('submit', (e) => {
   e.preventDefault();

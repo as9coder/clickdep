@@ -206,4 +206,44 @@ app.get('/projects/:id/logs', async (c) => {
     return c.json({ logs });
 });
 
+// BULK ACTIONS
+
+// Stop all projects
+app.post('/projects/stop-all', async (c) => {
+    console.log('[API] Stopping all projects');
+    const allProjects = listProjects();
+    let stopped = 0;
+
+    for (const project of allProjects) {
+        try {
+            await stopProjectProcess(project.id);
+            stopped++;
+        } catch (err) {
+            console.error(`[API] Failed to stop ${project.name}:`, err);
+        }
+    }
+
+    console.log(`[API] Stopped ${stopped}/${allProjects.length} projects`);
+    return c.json({ success: true, stopped, total: allProjects.length });
+});
+
+// Delete all projects
+app.post('/projects/delete-all', async (c) => {
+    console.log('[API] Deleting all projects');
+    const allProjects = listProjects();
+    let deleted = 0;
+
+    for (const project of allProjects) {
+        try {
+            await deleteProject(project.id);
+            deleted++;
+        } catch (err) {
+            console.error(`[API] Failed to delete ${project.name}:`, err);
+        }
+    }
+
+    console.log(`[API] Deleted ${deleted}/${allProjects.length} projects`);
+    return c.json({ success: true, deleted, total: allProjects.length });
+});
+
 export default app;
