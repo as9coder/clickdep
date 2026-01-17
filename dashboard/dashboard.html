@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — ClickDep</title>
+    <link rel="stylesheet" href="/src/dashboard.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar__logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            <span>ClickDep</span>
+        </div>
+
+        <nav class="sidebar__nav">
+            <a href="#" class="nav-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9,22 9,12 15,12 15,22" />
+                </svg>
+                Projects
+            </a>
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+                </svg>
+                Settings
+            </a>
+        </nav>
+
+        <div class="sidebar__user">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <div class="user-info">
+                <div class="user-email" id="user-email">Loading...</div>
+                <button id="sign-out-btn" class="sign-out-btn">Sign Out</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <header class="header">
+            <h1 class="header__title">Projects</h1>
+            <button class="btn btn--primary" id="add-project-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Project
+            </button>
+        </header>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <h3>No projects yet</h3>
+            <p>Add your first GitHub project to get started</p>
+            <button class="btn btn--primary" id="add-first-project-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Your First Project
+            </button>
+        </div>
+
+        <!-- Projects Grid (hidden when empty) -->
+        <div class="projects-grid hidden" id="projects-grid">
+            <!-- Sample project card -->
+            <div class="project-card">
+                <div class="project-card__header">
+                    <div class="project-card__status running"></div>
+                    <h3 class="project-card__name">my-portfolio</h3>
+                </div>
+                <div class="project-card__meta">
+                    <span class="tag">Vite</span>
+                    <span class="port">:3001</span>
+                </div>
+                <div class="project-card__actions">
+                    <button class="btn btn--ghost btn--sm">Details</button>
+                    <button class="btn btn--ghost btn--sm">Stop</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Project Modal -->
+    <div class="modal hidden" id="add-modal">
+        <div class="modal__backdrop"></div>
+        <div class="modal__content">
+            <button class="modal__close" id="close-modal">&times;</button>
+            <h2 class="modal__title">Add New Project</h2>
+            <form id="add-form">
+                <div class="form-group">
+                    <label for="project-name">Project Name</label>
+                    <input type="text" id="project-name" placeholder="my-portfolio" required>
+                </div>
+                <div class="form-group">
+                    <label for="github-url">GitHub URL</label>
+                    <input type="url" id="github-url" placeholder="https://github.com/user/repo" required>
+                </div>
+                <div class="form-group">
+                    <label for="branch">Branch</label>
+                    <input type="text" id="branch" placeholder="main" value="main">
+                </div>
+                <button type="submit" class="btn btn--primary btn--block">Add & Deploy</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { onAuthChange, logOut, getCurrentUser } from '/src/firebase-config.js';
+
+        // Check auth
+        onAuthChange((user) => {
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Update user info
+            document.getElementById('user-email').textContent = user.email || 'User';
+            document.getElementById('user-avatar').textContent = (user.email || 'U')[0].toUpperCase();
+        });
+
+        // Sign out
+        document.getElementById('sign-out-btn').addEventListener('click', async () => {
+            await logOut();
+            window.location.href = '/';
+        });
+
+        // Modal
+        const modal = document.getElementById('add-modal');
+        document.getElementById('add-project-btn').addEventListener('click', () => modal.classList.remove('hidden'));
+        document.getElementById('add-first-project-btn').addEventListener('click', () => modal.classList.remove('hidden'));
+        document.getElementById('close-modal').addEventListener('click', () => modal.classList.add('hidden'));
+        modal.querySelector('.modal__backdrop').addEventListener('click', () => modal.classList.add('hidden'));
+
+        // Form submit (placeholder)
+        document.getElementById('add-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Project creation coming soon!');
+            modal.classList.add('hidden');
+        });
+    </script>
+</body>
+
+</html>

@@ -30,7 +30,7 @@ app.get('/api/info', (c) => {
 app.get('/', serveStatic({ path: '../dashboard/landing.html' }));
 
 // Dashboard at /dashboard
-app.get('/dashboard', serveStatic({ path: '../dashboard/dist/index.html' }));
+app.get('/dashboard', serveStatic({ path: '../dashboard/dashboard.html' }));
 
 // Serve public folder assets (images)
 app.use('/images/*', serveStatic({ root: '../dashboard/public' }));
