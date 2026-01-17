@@ -172,6 +172,46 @@
         </div>
     </div>
 
+    <!-- Deployment Progress Modal -->
+    <div class="modal hidden" id="deploy-modal">
+        <div class="modal__backdrop"></div>
+        <div class="modal__content" style="max-width: 600px;">
+            <h2 class="modal__title" id="deploy-title">🚀 Deploying Project</h2>
+            <div id="deploy-content">
+                <div class="deploy-steps">
+                    <div class="deploy-step" id="step-building">
+                        <div class="step-icon building-icon">⚙️</div>
+                        <div class="step-info">
+                            <div class="step-label">Building</div>
+                            <div class="step-status" id="building-status">In progress...</div>
+                        </div>
+                    </div>
+                    <div class="deploy-step" id="step-running">
+                        <div class="step-icon">🚀</div>
+                        <div class="step-info">
+                            <div class="step-label">Running</div>
+                            <div class="step-status" id="running-status">Waiting...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="deploy-logs">
+                    <h3>Build Logs</h3>
+                    <div class="logs-container">
+                        <pre id="deploy-logs">Starting deployment...</pre>
+                    </div>
+                </div>
+                <div class="deploy-url hidden" id="deploy-url-section">
+                    <div style="text-align: center; padding: 20px;">
+                        <h3 style="margin-bottom: 12px;">🎉 Your project is live!</h3>
+                        <a id="deploy-url" href="#" target="_blank" class="btn btn--primary">
+                            Open Project →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .loading-state {
             text-align: center;
@@ -290,6 +330,83 @@
         .status-badge.error {
             background: rgba(239, 68, 68, 0.2);
             color: #ef4444;
+        }
+
+        .deploy-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .deploy-step {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 16px;
+            background: var(--glass);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .deploy-step.active {
+            border-color: var(--accent);
+            background: var(--glass-strong);
+        }
+
+        .deploy-step.done {
+            border-color: var(--success);
+            opacity: 0.7;
+        }
+
+        .step-icon {
+            font-size: 32px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .building-icon {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .step-info {
+            flex: 1;
+        }
+
+        .step-label {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .step-status {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .deploy-logs h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .deploy-url {
+            margin-top: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.1));
+            border-radius: 16px;
+            border: 1px solid var(--accent);
         }
     </style>
 
@@ -517,10 +634,13 @@
             errorEl.classList.add('hidden');
 
             try {
-                await createProject(name, githubUrl, branch);
+                const project = await createProject(name, githubUrl, branch);
                 closeAddModal();
                 document.getElementById('add-form').reset();
-                await loadProjects();
+
+                // Show deployment modal
+                showDeploymentProgress(project.id, project.name);
+
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.classList.remove('hidden');
@@ -529,6 +649,65 @@
                 submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg><span>Deploy Now</span>';
             }
         });
+
+        // Track deployment progress
+        let deploymentInterval = null;
+
+        function showDeploymentProgress(projectId, projectName) {
+            document.getElementById('deploy-title').textContent = `🚀 Deploying ${projectName}`;
+            document.getElementById('deploy-modal').classList.remove('hidden');
+            document.getElementById('deploy-url-section').classList.add('hidden');
+            document.getElementById('step-building').classList.add('active');
+            document.getElementById('step-running').classList.remove('active', 'done');
+            document.getElementById('deploy-logs').textContent = 'Starting deployment...';
+
+            // Poll for status
+            if (deploymentInterval) clearInterval(deploymentInterval);
+            deploymentInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API}/projects/${projectId}`);
+                    const project = await res.json();
+
+                    // Update status
+                    if (project.status === 'building') {
+                        document.getElementById('step-building').classList.add('active');
+                        document.getElementById('building-status').textContent = 'Building...';
+                    } else if (project.status === 'running') {
+                        document.getElementById('step-building').classList.remove('active');
+                        document.getElementById('step-building').classList.add('done');
+                        document.getElementById('building-status').textContent = 'Complete ✓';
+                        document.getElementById('step-running').classList.add('active');
+                        document.getElementById('running-status').textContent = 'Running ✓';
+
+                        // Show URL
+                        const url = `http://${window.location.hostname}:${project.port}`;
+                        document.getElementById('deploy-url').href = url;
+                        document.getElementById('deploy-url').textContent = url;
+                        document.getElementById('deploy-url-section').classList.remove('hidden');
+
+                        // Stop polling
+                        clearInterval(deploymentInterval);
+                        await loadProjects();
+                    } else if (project.status === 'error') {
+                        document.getElementById('building-status').textContent = 'Failed ✗';
+                        document.getElementById('step-building').style.borderColor = '#ef4444';
+                        clearInterval(deploymentInterval);
+                    }
+
+                    // Load logs
+                    const logsRes = await fetch(`${API}/projects/${projectId}/logs?lines=100`);
+                    const logsData = await logsRes.json();
+                    document.getElementById('deploy-logs').textContent = logsData.logs || 'No logs available';
+
+                    // Auto-scroll logs
+                    const logsContainer = document.getElementById('deploy-logs').parentElement;
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+
+                } catch (err) {
+                    console.error('Failed to poll deployment:', err);
+                }
+            }, 2000); // Poll every 2 seconds
+        }
 
         // Refresh projects every 5 seconds
         setInterval(loadProjects, 5000);
