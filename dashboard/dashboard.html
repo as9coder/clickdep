@@ -9,8 +9,13 @@
 </head>
 
 <body>
+    <!-- Floating Orbs Background -->
+    <div class="orb orb--1"></div>
+    <div class="orb orb--2"></div>
+    <div class="orb orb--3"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar glass">
         <div class="sidebar__logo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -21,25 +26,35 @@
         <nav class="sidebar__nav">
             <a href="#" class="nav-item active">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    <polyline points="9,22 9,12 15,12 15,22" />
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
-                Projects
+                <span>Projects</span>
+                <span class="nav-badge">0</span>
+            </a>
+            <a href="#" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20V10M18 20V4M6 20v-4" />
+                </svg>
+                <span>Analytics</span>
             </a>
             <a href="#" class="nav-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3" />
-                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
                 </svg>
-                Settings
+                <span>Settings</span>
             </a>
         </nav>
 
-        <div class="sidebar__user">
+        <div class="sidebar__user glass">
             <div class="user-avatar" id="user-avatar">?</div>
             <div class="user-info">
                 <div class="user-email" id="user-email">Loading...</div>
-                <button id="sign-out-btn" class="sign-out-btn">Sign Out</button>
+                <button id="sign-out-btn" class="sign-out-btn">Sign Out →</button>
             </div>
         </div>
     </aside>
@@ -47,34 +62,37 @@
     <!-- Main Content -->
     <main class="main">
         <header class="header">
-            <h1 class="header__title">Projects</h1>
+            <h1 class="header__title">Your Projects</h1>
             <button class="btn btn--primary" id="add-project-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14" />
                 </svg>
-                Add Project
+                <span>New Project</span>
             </button>
         </header>
 
         <!-- Empty State -->
-        <div class="empty-state" id="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
+        <div class="empty-state glass" id="empty-state">
+            <div class="empty-state__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+            </div>
             <h3>No projects yet</h3>
-            <p>Add your first GitHub project to get started</p>
+            <p>Deploy your first project from GitHub in just a few clicks. It's completely free!</p>
             <button class="btn btn--primary" id="add-first-project-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14" />
                 </svg>
-                Add Your First Project
+                <span>Add Your First Project</span>
             </button>
         </div>
 
-        <!-- Projects Grid (hidden when empty) -->
+        <!-- Projects Grid -->
         <div class="projects-grid hidden" id="projects-grid">
-            <!-- Sample project card -->
-            <div class="project-card">
+            <!-- Sample Card 1 -->
+            <div class="project-card glass">
+                <div class="project-card__glow"></div>
                 <div class="project-card__header">
                     <div class="project-card__status running"></div>
                     <h3 class="project-card__name">my-portfolio</h3>
@@ -88,6 +106,22 @@
                     <button class="btn btn--ghost btn--sm">Stop</button>
                 </div>
             </div>
+
+            <!-- Sample Card 2 -->
+            <div class="project-card glass">
+                <div class="project-card__glow"></div>
+                <div class="project-card__header">
+                    <div class="project-card__status building"></div>
+                    <h3 class="project-card__name">ecommerce-app</h3>
+                </div>
+                <div class="project-card__meta">
+                    <span class="tag">Next.js</span>
+                    <span class="port">Building...</span>
+                </div>
+                <div class="project-card__actions">
+                    <button class="btn btn--ghost btn--sm">View Logs</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -96,36 +130,40 @@
         <div class="modal__backdrop"></div>
         <div class="modal__content">
             <button class="modal__close" id="close-modal">&times;</button>
-            <h2 class="modal__title">Add New Project</h2>
+            <h2 class="modal__title">✨ New Project</h2>
             <form id="add-form">
                 <div class="form-group">
                     <label for="project-name">Project Name</label>
-                    <input type="text" id="project-name" placeholder="my-portfolio" required>
+                    <input type="text" id="project-name" placeholder="my-awesome-project" required>
                 </div>
                 <div class="form-group">
-                    <label for="github-url">GitHub URL</label>
-                    <input type="url" id="github-url" placeholder="https://github.com/user/repo" required>
+                    <label for="github-url">GitHub Repository</label>
+                    <input type="url" id="github-url" placeholder="https://github.com/username/repo" required>
                 </div>
                 <div class="form-group">
                     <label for="branch">Branch</label>
                     <input type="text" id="branch" placeholder="main" value="main">
                 </div>
-                <button type="submit" class="btn btn--primary btn--block">Add & Deploy</button>
+                <button type="submit" class="btn btn--primary btn--block">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                    <span>Deploy Now</span>
+                </button>
             </form>
         </div>
     </div>
 
     <script type="module">
-        import { onAuthChange, logOut, getCurrentUser } from '/src/firebase-config.js';
+        import { onAuthChange, logOut } from '/src/firebase-config.js';
 
-        // Check auth
+        // Auth check
         onAuthChange((user) => {
             if (!user) {
                 window.location.href = '/';
                 return;
             }
 
-            // Update user info
             document.getElementById('user-email').textContent = user.email || 'User';
             document.getElementById('user-avatar').textContent = (user.email || 'U')[0].toUpperCase();
         });
@@ -136,18 +174,26 @@
             window.location.href = '/';
         });
 
-        // Modal
+        // Modal controls
         const modal = document.getElementById('add-modal');
-        document.getElementById('add-project-btn').addEventListener('click', () => modal.classList.remove('hidden'));
-        document.getElementById('add-first-project-btn').addEventListener('click', () => modal.classList.remove('hidden'));
-        document.getElementById('close-modal').addEventListener('click', () => modal.classList.add('hidden'));
-        modal.querySelector('.modal__backdrop').addEventListener('click', () => modal.classList.add('hidden'));
+        const openModal = () => modal.classList.remove('hidden');
+        const closeModal = () => modal.classList.add('hidden');
 
-        // Form submit (placeholder)
+        document.getElementById('add-project-btn').addEventListener('click', openModal);
+        document.getElementById('add-first-project-btn').addEventListener('click', openModal);
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        modal.querySelector('.modal__backdrop').addEventListener('click', closeModal);
+
+        // Escape key closes modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Form (placeholder)
         document.getElementById('add-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            alert('Project creation coming soon!');
-            modal.classList.add('hidden');
+            alert('🚀 Deployment coming soon!');
+            closeModal();
         });
     </script>
 </body>
