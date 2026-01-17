@@ -21,14 +21,19 @@ app.get('/api/info', (c) => {
     const ip = getLocalIP();
     return c.json({
         ip,
-        dashboardUrl: `http://${ip}:3000`,
+        dashboardUrl: `http://${ip}:3000/dashboard`,
         version: '1.0.0',
     });
 });
 
-// Serve static dashboard (production)
-app.use('/*', serveStatic({ root: '../dashboard/dist' }));
-app.use('/', serveStatic({ path: '../dashboard/dist/index.html' }));
+// Landing page at root
+app.get('/', serveStatic({ path: '../dashboard/landing.html' }));
+
+// Dashboard at /dashboard
+app.get('/dashboard', serveStatic({ path: '../dashboard/dist/index.html' }));
+
+// Serve static assets (CSS, JS, images)
+app.use('/*', serveStatic({ root: '../dashboard' }));
 
 // Get local IP address
 function getLocalIP(): string {

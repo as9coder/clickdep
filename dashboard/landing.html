@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickDep — Deploy Your Projects in Seconds</title>
+    <meta name="description"
+        content="Free, self-hosted deployments for Vite, Next.js, and more. Deploy in seconds with auto-detection and live updates.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/src/landing.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav__content">
+                <div class="nav__logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                    <span>ClickDep</span>
+                </div>
+                <a href="/dashboard" class="btn btn--primary btn--sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero__content">
+                <div class="hero__text">
+                    <h1 class="hero__title">
+                        Deploy Your Projects<br>
+                        <span class="gradient-text">in Seconds</span>
+                    </h1>
+                    <p class="hero__subtitle">
+                        Free, self-hosted deployments for Vite, Next.js, and more.<br>
+                        No credit card required. Unlimited projects.
+                    </p>
+                    <div class="hero__cta">
+                        <a href="/dashboard" class="btn btn--primary btn--lg pulse">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            Get Started Free
+                        </a>
+                        <a href="#features" class="btn btn--ghost btn--lg">Learn More</a>
+                    </div>
+                </div>
+                <div class="hero__visual">
+                    <img src="/images/hero_deployment.png" alt="Deployment Pipeline" class="hero__image">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose ClickDep?</h2>
+            <div class="features__grid">
+                <div class="feature-card">
+                    <img src="/images/feature_auto_detect.png" alt="Auto Detection" class="feature-card__icon">
+                    <h3 class="feature-card__title">Auto-Detection</h3>
+                    <p class="feature-card__desc">
+                        Automatically detects your framework (Vite, Next.js, Remix) and configures everything for you.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <img src="/images/feature_lightning_fast.png" alt="Lightning Fast" class="feature-card__icon">
+                    <h3 class="feature-card__title">Lightning Fast</h3>
+                    <p class="feature-card__desc">
+                        Powered by Bun runtime. Deploy in seconds, not minutes. Watch your builds fly.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <img src="/images/feature_github_integration.png" alt="GitHub Integration"
+                        class="feature-card__icon">
+                    <h3 class="feature-card__title">GitHub Integration</h3>
+                    <p class="feature-card__desc">
+                        Deploy directly from your GitHub repos. Just paste the URL and we handle the rest.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <img src="/images/feature_live_updates.png" alt="Live Updates" class="feature-card__icon">
+                    <h3 class="feature-card__title">Live Updates</h3>
+                    <p class="feature-card__desc">
+                        Real-time deployment logs and status updates. Watch your project come to life.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step__number">1</div>
+                    <h3 class="step__title">Connect GitHub</h3>
+                    <p class="step__desc">Paste your GitHub repository URL</p>
+                </div>
+                <div class="step__arrow">→</div>
+                <div class="step">
+                    <div class="step__number">2</div>
+                    <h3 class="step__title">Auto-Configure</h3>
+                    <p class="step__desc">We detect your framework automatically</p>
+                </div>
+                <div class="step__arrow">→</div>
+                <div class="step">
+                    <div class="step__number">3</div>
+                    <h3 class="step__title">Deploy</h3>
+                    <p class="step__desc">Watch your site go live in real-time</p>
+                </div>
+            </div>
+            <div class="cta-center">
+                <a href="/dashboard" class="btn btn--primary btn--lg pulse">
+                    Start Deploying Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing">
+        <div class="container">
+            <h2 class="section-title">Simple, Transparent Pricing</h2>
+            <div class="pricing-card">
+                <div class="pricing-card__badge">Free Forever</div>
+                <div class="pricing-card__price">$0<span>/month</span></div>
+                <ul class="pricing-card__features">
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        Unlimited Projects
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        Auto Framework Detection
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        GitHub Integration
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        Real-Time Deployment Logs
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        Community Support
+                    </li>
+                </ul>
+                <a href="/dashboard" class="btn btn--primary btn--block">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__brand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                    <span>ClickDep</span>
+                </div>
+                <div class="footer__links">
+                    <a href="https://github.com/as9coder/clickdep" target="_blank">GitHub</a>
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="mailto:support@clickdep.com">Contact</a>
+                </div>
+            </div>
+            <div class="footer__copy">
+                © 2026 ClickDep. Free deployment platform for everyone.
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
