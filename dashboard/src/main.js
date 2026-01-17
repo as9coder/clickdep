@@ -2,12 +2,27 @@
 // ClickDep Dashboard — Main Application
 // =========================================
 
+import { onAuthChange, logOut, getCurrentUser, getIdToken } from './firebase-config.js';
+
 const API_BASE = '/api';
 
 // State
 let projects = [];
 let currentProject = null;
 let deploymentPollingId = null;
+let currentUser = null;
+
+// Check auth on load
+onAuthChange((user) => {
+  if (user) {
+    currentUser = user;
+    console.log('[Dashboard] User authenticated:', user.email);
+    init();
+  } else {
+    console.log('[Dashboard] Not authenticated, redirecting...');
+    window.location.href = '/';
+  }
+});
 
 // DOM Elements
 const elements = {
@@ -29,7 +44,7 @@ const elements = {
 // =========================================
 
 async function api(endpoint, options = {}) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetch(`${API_BASE}${endpoint} `, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -61,13 +76,13 @@ function renderProjectCard(project) {
   card.dataset.id = project.id;
 
   card.innerHTML = `
-    <div class="project-card__header">
+  < div class="project-card__header" >
       <div>
         <div class="project-card__name">${escapeHtml(project.name)}</div>
         <div class="project-card__framework">${project.framework || 'Detecting...'}</div>
       </div>
       <span class="badge ${statusBadge}">${project.status}</span>
-    </div>
+    </div >
     
     <div class="project-card__info">
       <a href="http://${window.location.hostname}:${project.port}" target="_blank" class="project-card__url" onclick="event.stopPropagation()">
@@ -93,7 +108,7 @@ function renderProjectCard(project) {
         Details
       </button>
     </div>
-  `;
+`;
 
   card.addEventListener('click', () => window.showDetails(project.id));
   return card;
@@ -162,7 +177,7 @@ async function addProject(name, githubUrl, branch) {
     window.deployProjectWithModal(project.id);
   } catch (err) {
     console.error('[Dashboard] Add project error:', err);
-    alert(`Failed to add project: ${err.message}`);
+    alert(`Failed to add project: ${err.message} `);
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -188,9 +203,9 @@ async function deployProjectWithModal(id) {
   }
 
   // Show deployment modal
-  elements.detailTitle.textContent = `Deploying: ${project.name}`;
+  elements.detailTitle.textContent = `Deploying: ${project.name} `;
   elements.detailBody.innerHTML = `
-    <div class="deploy-status">
+  < div class="deploy-status" >
       <div class="deploy-status__step" id="step-idle">
         <div class="deploy-status__icon">⏳</div>
         <div class="deploy-status__label">Idle</div>
@@ -205,15 +220,15 @@ async function deployProjectWithModal(id) {
         <div class="deploy-status__icon">🚀</div>
         <div class="deploy-status__label">Running</div>
       </div>
-    </div>
+    </div >
     <div class="deploy-logs-label">Live Logs:</div>
     <div class="logs-container" id="deploy-logs">Starting deployment...</div>
-  `;
+`;
   elements.detailModal.classList.remove('hidden');
 
   // Start deployment
   console.log('[Dashboard] Starting deployment API call');
-  api(`/projects/${id}/deploy`, { method: 'POST' }).catch(err => {
+  api(`/ projects / ${id}/deploy`, { method: 'POST' }).catch(err => {
     console.error('[Dashboard] Deploy API error:', err);
     const logsEl = document.getElementById('deploy-logs');
     if (logsEl) {

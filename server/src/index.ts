@@ -32,8 +32,14 @@ app.get('/', serveStatic({ path: '../dashboard/landing.html' }));
 // Dashboard at /dashboard
 app.get('/dashboard', serveStatic({ path: '../dashboard/dist/index.html' }));
 
-// Serve static assets (CSS, JS, images)
-app.use('/*', serveStatic({ root: '../dashboard' }));
+// Serve public folder assets (images)
+app.use('/images/*', serveStatic({ root: '../dashboard/public' }));
+
+// Serve src folder assets (CSS, JS)
+app.use('/src/*', serveStatic({ root: '../dashboard' }));
+
+// Serve dashboard dist assets
+app.use('/*', serveStatic({ root: '../dashboard/dist' }));
 
 // Get local IP address
 function getLocalIP(): string {
