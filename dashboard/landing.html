@@ -4,26 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClickDep — Deploy Your Projects in Seconds</title>
+    <title>ClickDep — Deploy in Seconds</title>
     <meta name="description" content="Free, self-hosted deployments for Vite, Next.js, and more.">
     <link rel="stylesheet" href="/src/landing.css">
 </head>
 
 <body>
+    <!-- Background -->
+    <div class="bg-gradient"></div>
+    <div class="grid-pattern"></div>
+    <div class="orb orb--1"></div>
+    <div class="orb orb--2"></div>
+    <div class="orb orb--3"></div>
+
     <!-- Navigation -->
-    <nav class="nav">
-        <div class="container">
-            <div class="nav__content">
-                <div class="nav__logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                    </svg>
-                    <span>ClickDep</span>
-                </div>
-                <div class="nav__actions">
-                    <button onclick="openAuthModal(false)" class="btn btn--outline btn--sm">Sign In</button>
-                    <button onclick="openAuthModal(true)" class="btn btn--primary btn--sm">Sign Up</button>
-                </div>
+    <nav class="nav glass">
+        <div class="nav__content">
+            <div class="nav__logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <span>ClickDep</span>
+            </div>
+            <div class="nav__actions">
+                <button onclick="openAuthModal(false)" class="btn btn--ghost btn--sm">Sign In</button>
+                <button onclick="openAuthModal(true)" class="btn btn--primary btn--sm">Get Started</button>
             </div>
         </div>
     </nav>
@@ -33,29 +38,59 @@
         <div class="container">
             <div class="hero__content">
                 <div class="hero__text">
-                    <div class="hero__badge">
-                        <span></span>
+                    <div class="hero__badge glass">
+                        <span class="dot"></span>
                         Free & Open Source
                     </div>
                     <h1 class="hero__title">
-                        Deploy in<br><span class="highlight">seconds.</span>
+                        Deploy in<br><span class="gradient">seconds.</span>
                     </h1>
                     <p class="hero__subtitle">
                         The fastest way to deploy your GitHub projects. Auto-detects frameworks, builds instantly, and
-                        serves your site. No configuration required.
+                        serves your site. Zero configuration.
                     </p>
                     <div class="hero__cta">
-                        <button onclick="openAuthModal(true)" class="btn btn--primary">
+                        <button onclick="openAuthModal(true)" class="btn btn--primary btn--lg">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M5 12h14M12 5l7 7-7 7" />
                             </svg>
-                            Start Deploying
+                            <span>Start Deploying</span>
                         </button>
-                        <a href="#features" class="btn btn--ghost">Learn More</a>
+                        <a href="#features" class="btn btn--ghost btn--lg">Learn More</a>
                     </div>
                 </div>
+
                 <div class="hero__visual">
-                    <img src="/images/hero_deployment.png" alt="Deployment Pipeline">
+                    <div class="hero__card glass">
+                        <div class="terminal">
+                            <div class="terminal__header">
+                                <div class="terminal__dot terminal__dot--red"></div>
+                                <div class="terminal__dot terminal__dot--yellow"></div>
+                                <div class="terminal__dot terminal__dot--green"></div>
+                            </div>
+                            <div class="terminal__body">
+                                <div class="terminal__line">
+                                    <span class="terminal__prompt">$</span>
+                                    <span class="terminal__cmd typing">clickdep deploy my-app</span>
+                                </div>
+                                <div class="terminal__output">✓ Cloning repository...</div>
+                                <div class="terminal__output">✓ Detected: Vite + React</div>
+                                <div class="terminal__output">✓ Installing dependencies...</div>
+                                <div class="terminal__output">✓ Building project...</div>
+                                <div class="terminal__output">🚀 Live at: http://localhost:3001</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating badges -->
+                    <div class="floating-badge floating-badge--1 glass">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        Auto-detect
+                    </div>
+                    <div class="floating-badge floating-badge--2 glass">⚡ Bun powered</div>
+                    <div class="floating-badge floating-badge--3 glass">🆓 Free forever</div>
                 </div>
             </div>
         </div>
@@ -65,56 +100,62 @@
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <div class="section-tag">Features</div>
+                <div class="section-badge glass">Features</div>
                 <h2 class="section-title">Everything you need</h2>
-                <p class="section-subtitle">Built for developers who want to ship fast without the DevOps overhead</p>
+                <p class="section-subtitle">Built for developers who want to ship fast without DevOps overhead</p>
             </div>
 
             <div class="features__grid">
-                <div class="feature-card">
+                <div class="feature-card glass">
+                    <div class="feature-card__glow"></div>
                     <div class="feature-card__icon">
-                        <svg viewBox="0 0 24 24" stroke-width="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                             <circle cx="11" cy="11" r="8" />
                             <path d="M21 21l-4.35-4.35" />
                         </svg>
                     </div>
                     <h3 class="feature-card__title">Auto-Detection</h3>
-                    <p class="feature-card__desc">Automatically detects Vite, Next.js, Remix, Astro and more. Zero
-                        configuration required.</p>
+                    <p class="feature-card__desc">Automatically detects Vite, Next.js, Remix, Astro and 20+ more
+                        frameworks. Zero configuration needed.</p>
                 </div>
 
-                <div class="feature-card">
+                <div class="feature-card glass">
+                    <div class="feature-card__glow"></div>
                     <div class="feature-card__icon">
-                        <svg viewBox="0 0 24 24" stroke-width="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                         </svg>
                     </div>
                     <h3 class="feature-card__title">Lightning Fast</h3>
-                    <p class="feature-card__desc">Powered by Bun runtime. Builds complete in seconds, not minutes.</p>
+                    <p class="feature-card__desc">Powered by Bun runtime. Builds complete in seconds, not minutes. Watch
+                        your projects fly.</p>
                 </div>
 
-                <div class="feature-card">
+                <div class="feature-card glass">
+                    <div class="feature-card__glow"></div>
                     <div class="feature-card__icon">
-                        <svg viewBox="0 0 24 24" stroke-width="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                             <path
-                                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77" />
+                            <path d="M14 14v4m-2-2h4" />
                         </svg>
                     </div>
                     <h3 class="feature-card__title">GitHub Native</h3>
                     <p class="feature-card__desc">Just paste your repo URL. We clone, build, and deploy automatically.
-                    </p>
+                        No webhooks needed.</p>
                 </div>
 
-                <div class="feature-card">
+                <div class="feature-card glass">
+                    <div class="feature-card__glow"></div>
                     <div class="feature-card__icon">
-                        <svg viewBox="0 0 24 24" stroke-width="2">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
                             <path d="M8 21h8M12 17v4" />
                         </svg>
                     </div>
-                    <h3 class="feature-card__title">Live Logs</h3>
-                    <p class="feature-card__desc">Watch your deployment in real-time. See every build step as it
-                        happens.</p>
+                    <h3 class="feature-card__title">Real-time Logs</h3>
+                    <p class="feature-card__desc">Watch your deployment in real-time. See every build step, error, and
+                        log as it happens live.</p>
                 </div>
             </div>
         </div>
@@ -124,27 +165,27 @@
     <section class="steps-section">
         <div class="container">
             <div class="section-header">
-                <div class="section-tag">How it works</div>
-                <h2 class="section-title">Three simple steps</h2>
+                <div class="section-badge glass">How it works</div>
+                <h2 class="section-title">Deploy in 3 steps</h2>
             </div>
 
             <div class="steps">
-                <div class="step">
-                    <div class="step__number">1</div>
-                    <h3 class="step__title">Paste GitHub URL</h3>
-                    <p class="step__desc">Add your repository link</p>
+                <div class="step-card glass">
+                    <div class="step-card__number">1</div>
+                    <h3 class="step-card__title">Paste GitHub URL</h3>
+                    <p class="step-card__desc">Add your repository link — public or private</p>
                 </div>
-                <div class="step__connector">→</div>
-                <div class="step">
-                    <div class="step__number">2</div>
-                    <h3 class="step__title">Auto-Configure</h3>
-                    <p class="step__desc">We detect everything</p>
+                <div class="step-connector">→</div>
+                <div class="step-card glass">
+                    <div class="step-card__number">2</div>
+                    <h3 class="step-card__title">Auto-Configure</h3>
+                    <p class="step-card__desc">We detect your framework and set everything up</p>
                 </div>
-                <div class="step__connector">→</div>
-                <div class="step">
-                    <div class="step__number">3</div>
-                    <h3 class="step__title">Go Live</h3>
-                    <p class="step__desc">Your site is deployed</p>
+                <div class="step-connector">→</div>
+                <div class="step-card glass">
+                    <div class="step-card__number">3</div>
+                    <h3 class="step-card__title">Go Live</h3>
+                    <p class="step-card__desc">Your site is deployed and accessible instantly</p>
                 </div>
             </div>
         </div>
@@ -154,14 +195,14 @@
     <section class="pricing">
         <div class="container">
             <div class="section-header">
-                <div class="section-tag">Pricing</div>
+                <div class="section-badge glass">Pricing</div>
                 <h2 class="section-title">Free. Forever.</h2>
-                <p class="section-subtitle">No credit card. No hidden fees. Just deploy.</p>
+                <p class="section-subtitle">No credit card. No hidden fees. No limits.</p>
             </div>
 
-            <div class="pricing-card">
+            <div class="pricing-card glass">
                 <div class="pricing-card__badge">Free Plan</div>
-                <div class="pricing-card__price">$0<span>/month</span></div>
+                <div class="pricing-card__price">$0<span>/mo</span></div>
                 <ul class="pricing-card__features">
                     <li>
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
@@ -185,16 +226,17 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                             <path d="M5 13l4 4L19 7" />
                         </svg>
-                        Real-Time Logs
+                        Real-time Logs
                     </li>
                     <li>
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                             <path d="M5 13l4 4L19 7" />
                         </svg>
-                        Self-Hosted
+                        Self-hosted & Private
                     </li>
                 </ul>
-                <a href="/dashboard" class="btn btn--primary btn--block">Get Started</a>
+                <button onclick="openAuthModal(true)" class="btn btn--primary btn--block btn--lg">Get Started
+                    Free</button>
             </div>
         </div>
     </section>
@@ -203,13 +245,13 @@
     <section class="cta-section">
         <div class="container">
             <h2 class="section-title">Ready to deploy?</h2>
-            <p class="section-subtitle" style="margin-bottom: 40px;">Start deploying your projects in seconds.</p>
-            <a href="/dashboard" class="btn btn--primary">
+            <p class="section-subtitle">Start shipping your projects in seconds. It's completely free.</p>
+            <button onclick="openAuthModal(true)" class="btn btn--primary btn--lg">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-                Open Dashboard
-            </a>
+                <span>Start Deploying Now</span>
+            </button>
         </div>
     </section>
 
@@ -228,7 +270,7 @@
                     <a href="/dashboard">Dashboard</a>
                 </div>
             </div>
-            <div class="footer__copy">© 2026 ClickDep. Free deployment platform.</div>
+            <div class="footer__copy">© 2026 ClickDep. Free deployment platform for everyone.</div>
         </div>
     </footer>
 
@@ -242,7 +284,7 @@
         // If user is already logged in, redirect to dashboard
         onAuthChange((user) => {
             if (user) {
-                console.log('[Landing] User already signed in, redirecting to dashboard...');
+                console.log('[Landing] User signed in, redirecting...');
                 window.location.href = '/dashboard';
             }
         });
