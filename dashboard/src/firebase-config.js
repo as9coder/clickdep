@@ -1,6 +1,6 @@
 // Firebase Configuration
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyALNPxOu2AB7nFsoZ7EzYBwg3XyJ4xSl4k",
@@ -27,7 +27,8 @@ export async function signUp(email, password) {
 }
 
 export async function signInWithGoogle() {
-    return signInWithPopup(auth, googleProvider);
+    // Use redirect instead of popup to avoid COOP errors
+    return signInWithRedirect(auth, googleProvider);
 }
 
 export async function logOut() {

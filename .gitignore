@@ -22,3 +22,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Firebase Service Account Keys (sensitive!)
+*firebase-adminsdk*.json
+serviceAccountKey.json
