@@ -176,18 +176,34 @@
     <div class="modal hidden" id="deploy-modal">
         <div class="modal__backdrop"></div>
         <div class="modal__content" style="max-width: 600px;">
-            <h2 class="modal__title" id="deploy-title">🚀 Deploying Project</h2>
+            <h2 class="modal__title" id="deploy-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="width: 28px; height: 28px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+                Deploying Project
+            </h2>
             <div id="deploy-content">
                 <div class="deploy-steps">
                     <div class="deploy-step" id="step-building">
-                        <div class="step-icon building-icon">⚙️</div>
+                        <div class="step-icon building-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg>
+                        </div>
                         <div class="step-info">
                             <div class="step-label">Building</div>
                             <div class="step-status" id="building-status">In progress...</div>
                         </div>
                     </div>
                     <div class="deploy-step" id="step-running">
-                        <div class="step-icon">🚀</div>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                            </svg>
+                        </div>
                         <div class="step-info">
                             <div class="step-label">Running</div>
                             <div class="step-status" id="running-status">Waiting...</div>
@@ -202,7 +218,14 @@
                 </div>
                 <div class="deploy-url hidden" id="deploy-url-section">
                     <div style="text-align: center; padding: 20px;">
-                        <h3 style="margin-bottom: 12px;">🎉 Your project is live!</h3>
+                        <h3 style="margin-bottom: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                style="width: 24px; height: 24px; display: inline-block; vertical-align: middle; margin-right: 8px; stroke: #10b981;">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                <polyline points="22 4 12 14.01 9 11.01" />
+                            </svg>
+                            Your project is live!
+                        </h3>
                         <a id="deploy-url" href="#" target="_blank" class="btn btn--primary">
                             Open Project →
                         </a>
@@ -360,7 +383,6 @@
         }
 
         .step-icon {
-            font-size: 32px;
             width: 48px;
             height: 48px;
             display: flex;
@@ -368,7 +390,13 @@
             justify-content: center;
         }
 
-        .building-icon {
+        .step-icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--accent);
+        }
+
+        .building-icon svg {
             animation: spin 2s linear infinite;
         }
 
@@ -654,7 +682,13 @@
         let deploymentInterval = null;
 
         function showDeploymentProgress(projectId, projectName) {
-            document.getElementById('deploy-title').textContent = `🚀 Deploying ${projectName}`;
+            document.getElementById('deploy-title').innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                Deploying ${projectName}
+            `;
             document.getElementById('deploy-modal').classList.remove('hidden');
             document.getElementById('deploy-url-section').classList.add('hidden');
             document.getElementById('step-building').classList.add('active');
