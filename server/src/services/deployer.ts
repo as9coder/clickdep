@@ -7,6 +7,7 @@ import { startProcess, stopProcess, getNextPort } from './pm2';
  * Create a new project
  */
 export async function createProject(
+    userId: string,
     name: string,
     githubUrl: string,
     branch: string = 'main'
@@ -27,9 +28,9 @@ export async function createProject(
 
     // Insert into database
     db.run(
-        `INSERT INTO projects (id, name, github_url, branch, framework, build_command, start_command, output_dir, port)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, name, githubUrl, branch, framework.name, framework.buildCommand, framework.startCommand, framework.outputDir, port]
+        `INSERT INTO projects (id, user_id, name, github_url, branch, framework, build_command, start_command, output_dir, port)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, userId, name, githubUrl, branch, framework.name, framework.buildCommand, framework.startCommand, framework.outputDir, port]
     );
 
     return getProject(id)!;

@@ -287,12 +287,13 @@
     </style>
 
     <script type="module">
-        import { onAuthChange, logOut } from '/src/firebase-config.js';
+        import { onAuthChange, logOut, getCurrentUser } from '/src/firebase-config.js';
 
         const API = '/api';
         let projects = [];
         let currentProjectId = null;
         let logsInterval = null;
+        let currentUser = null;
 
         // Auth check
         onAuthChange((user) => {
@@ -300,6 +301,7 @@
                 window.location.href = '/';
                 return;
             }
+            currentUser = user;
             document.getElementById('user-email').textContent = user.email || 'User';
             document.getElementById('user-avatar').textContent = (user.email || 'U')[0].toUpperCase();
             loadProjects();
@@ -314,7 +316,9 @@
         // Load projects
         async function loadProjects() {
             try {
-                const res = await fetch(`${API}/projects`);
+                const res = await fetch(`${API}/projects`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
                 projects = await res.json();
                 renderProjects();
             } catch (err) {
@@ -367,7 +371,10 @@
         async function createProject(name, githubUrl, branch) {
             const res = await fetch(`${API}/projects`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': currentUser.uid
+                },
                 body: JSON.stringify({ name, github_url: githubUrl, branch })
             });
 

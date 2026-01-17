@@ -36,9 +36,13 @@ function releaseLock(projectId: string, operation: string): void {
     operationsInProgress.delete(key);
 }
 
-// List all projects
+// List all projects (filtered by user)
 app.get('/projects', (c) => {
-    const projects = listProjects();
+    const userId = c.req.header('X-User-Id');
+    if (!userId) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const projects = listProjects().filter(p => p.user_id === userId);
     return c.json(projects);
 });
 
@@ -58,6 +62,11 @@ app.get('/projects/:id', async (c) => {
 // Create project
 app.post('/projects', async (c) => {
     try {
+        const userId = c.req.header('X-User-Id');
+        if (!userId) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
         const body = await c.req.json();
         const { name, github_url, branch } = body;
 
@@ -87,8 +96,8 @@ app.post('/projects', async (c) => {
         }
 
         try {
-            console.log(`[API] Creating project: ${sanitizedName}`);
-            const project = await createProject(sanitizedName, github_url, branch || 'main');
+            console.log(`[API] Creating project: ${sanitizedName} for user: ${userId}`);
+            const project = await createProject(userId, sanitizedName, github_url, branch || 'main');
             console.log(`[API] Project created: ${sanitizedName}`);
             return c.json(project, 201);
         } finally {

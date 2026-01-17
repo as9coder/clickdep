@@ -64,6 +64,7 @@ export { db, DATA_DIR };
 // Type definitions
 export interface Project {
   id: string;
+  user_id: string;
   name: string;
   github_url: string;
   branch: string;
