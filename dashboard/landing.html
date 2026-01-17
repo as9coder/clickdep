@@ -235,7 +235,17 @@
     <!-- Auth Module -->
     <script type="module">
         import { createAuthModal } from '/src/auth.js';
+        import { onAuthChange } from '/src/firebase-config.js';
+
         createAuthModal();
+
+        // If user is already logged in, redirect to dashboard
+        onAuthChange((user) => {
+            if (user) {
+                console.log('[Landing] User already signed in, redirecting to dashboard...');
+                window.location.href = '/dashboard';
+            }
+        });
     </script>
 </body>
 
