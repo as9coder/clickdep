@@ -669,6 +669,11 @@
                 // Show deployment modal
                 showDeploymentProgress(project.id, project.name);
 
+                // Trigger deployment automatically
+                fetch(`${API}/projects/${project.id}/deploy`, { method: 'POST' }).catch(err =>
+                    console.error('Deploy trigger failed:', err)
+                );
+
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.classList.remove('hidden');
