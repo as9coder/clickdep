@@ -108,6 +108,45 @@
         <div class="projects-grid" id="projects-grid"></div>
     </main>
 
+    <!-- Project Details Modal -->
+    <div class="modal hidden" id="details-modal">
+        <div class="modal__backdrop"></div>
+        <div class="modal__content" style="max-width: 600px;">
+            <button class="modal__close" id="close-details">&times;</button>
+            <h2 class="modal__title" id="details-title">Project Details</h2>
+            <div id="details-content">
+                <div class="details-info">
+                    <div class="detail-row">
+                        <span class="detail-label">Owner</span>
+                        <span class="detail-value" id="detail-owner">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value" id="detail-status">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Framework</span>
+                        <span class="detail-value" id="detail-framework">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Port</span>
+                        <span class="detail-value" id="detail-port">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">GitHub</span>
+                        <a class="detail-value detail-link" id="detail-github" href="#" target="_blank">-</a>
+                    </div>
+                </div>
+                <div class="logs-section">
+                    <h3>Logs</h3>
+                    <div class="logs-container" id="logs-container">
+                        <pre id="logs-content">Loading logs...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .stats-grid {
             display: grid;
@@ -160,6 +199,145 @@
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal__content {
+            position: relative;
+            background: rgba(20, 20, 40, 0.9);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal__close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal__close:hover {
+            background: var(--glass-strong);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        .modal__title {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 32px;
+        }
+
+        .details-info {
+            margin-bottom: 24px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .detail-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .logs-section h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .logs-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .logs-container pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 0;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.running {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-badge.building {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-badge.stopped {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .status-badge.idle {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
         }
     </style>
 
@@ -218,7 +396,11 @@
             <span class="tag">${p.framework || 'Unknown'}</span>
             <span class="port">${p.status === 'running' ? ':' + p.port : p.status}</span>
           </div>
+          <div style="padding: 8px 0; font-size: 12px; color: var(--text-secondary);">
+            👤 ${p.user_id || 'Unknown User'}
+          </div>
           <div class="project-card__actions">
+            <button class="btn btn--ghost btn--sm" onclick="showDetails('${p.id}')">Details</button>
             ${p.status === 'running'
                     ? `<button class="btn btn--ghost btn--sm" onclick="stopProject('${p.id}')">Stop</button>`
                     : `<button class="btn btn--primary btn--sm" onclick="deployProject('${p.id}')">Deploy</button>`
@@ -267,6 +449,46 @@
                 alert('Download info failed: ' + err.message);
             }
         };
+
+        window.showDetails = async (id) => {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+
+            document.getElementById('details-title').textContent = project.name;
+            document.getElementById('detail-owner').textContent = project.user_id || 'Unknown';
+            document.getElementById('detail-status').innerHTML = `<span class="status-badge ${project.status}">${project.status}</span>`;
+            document.getElementById('detail-framework').textContent = project.framework || 'Unknown';
+            document.getElementById('detail-port').textContent = project.port ? ':' + project.port : '-';
+            document.getElementById('detail-github').href = project.github_url;
+            document.getElementById('detail-github').textContent = project.github_url.replace('https://github.com/', '');
+
+            document.getElementById('details-modal').classList.remove('hidden');
+            loadLogs(id);
+        };
+
+        async function loadLogs(id) {
+            try {
+                const res = await fetch(`${API}/projects/${id}/logs?lines=50`);
+                const data = await res.json();
+                document.getElementById('logs-content').textContent = data.logs || 'No logs available';
+            } catch (err) {
+                document.getElementById('logs-content').textContent = 'Failed to load logs';
+            }
+        }
+
+        document.getElementById('close-details').addEventListener('click', () => {
+            document.getElementById('details-modal').classList.add('hidden');
+        });
+
+        document.getElementById('details-modal').querySelector('.modal__backdrop').addEventListener('click', () => {
+            document.getElementById('details-modal').classList.add('hidden');
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('details-modal').classList.add('hidden');
+            }
+        });
 
         document.getElementById('stop-all-btn').addEventListener('click', async () => {
             if (!confirm('Stop all running projects?')) return;
