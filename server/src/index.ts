@@ -32,6 +32,9 @@ app.get('/', serveStatic({ path: '../dashboard/landing.html' }));
 // Dashboard at /dashboard
 app.get('/dashboard', serveStatic({ path: '../dashboard/dashboard.html' }));
 
+// Admin panel at /admin
+app.get('/admin', serveStatic({ path: '../dashboard/admin.html' }));
+
 // Serve public folder assets (images)
 app.use('/images/*', serveStatic({ root: '../dashboard/public' }));
 

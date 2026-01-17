@@ -246,4 +246,36 @@ app.post('/projects/delete-all', async (c) => {
     return c.json({ success: true, deleted, total: allProjects.length });
 });
 
+// ADMIN ROUTES
+
+// Get all projects with full details (admin only)
+app.get('/admin/projects', (c) => {
+    const projects = listProjects();
+    const stats = {
+        total: projects.length,
+        running: projects.filter(p => p.status === 'running').length,
+        stopped: projects.filter(p => p.status === 'stopped').length,
+        building: projects.filter(p => p.status === 'building').length,
+    };
+    return c.json({ projects, stats });
+});
+
+// Download project source code (admin only)
+app.get('/admin/projects/:id/download', async (c) => {
+    const project = getProject(c.req.param('id'));
+    if (!project) {
+        return c.json({ error: 'Project not found' }, 404);
+    }
+
+    const { getRepoPath } = await import('../services/github');
+    const repoPath = getRepoPath(project.name);
+
+    // Return the path for download
+    return c.json({
+        path: repoPath,
+        name: project.name,
+        message: 'Use file system to access: ' + repoPath
+    });
+});
+
 export default app;
