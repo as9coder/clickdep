@@ -2,10 +2,60 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
 import api from './routes/api';
-import { checkForUpdates } from './services/deployer';
+import { checkForUpdates, getProjectByName } from './services/deployer';
 import { networkInterfaces } from 'os';
 
 const app = new Hono();
+
+// Wildcard Subdomain Proxy (Reverse Proxy)
+app.use('*', async (c, next) => {
+    const host = c.req.header('host') || '';
+
+    // Check if it's a subdomain request (e.g. project.clickdep.dev or project.localhost:3000)
+    // Ignore main domain, www, dashboard, admin, and raw IP addresses
+    if (host &&
+        !host.startsWith('clickdep.dev') &&
+        !host.startsWith('www.') &&
+        !host.startsWith('dashboard.') &&
+        !host.startsWith('admin.') &&
+        !host.match(/^\d+\.\d+\.\d+\.\d+/) && // Ignore IPs
+        !host.startsWith('localhost') // Ignore localhost root
+    ) {
+        // Extract subdomain
+        const subdomain = host.split('.')[0];
+
+        // Lookup project
+        const project = getProjectByName(subdomain);
+
+        if (project && project.status === 'running' && project.port) {
+            // Rewrite request to internal port
+            const targetUrl = `http://localhost:${project.port}${c.req.path}`;
+            console.log(`[Proxy] Routing ${host}${c.req.path} -> ${targetUrl}`);
+
+            try {
+                // Forward request
+                const response = await fetch(targetUrl, {
+                    method: c.req.method,
+                    headers: c.req.header(),
+                    body: c.req.raw.body
+                });
+
+                // Return response as-is (streaming)
+                return new Response(response.body, {
+                    status: response.status,
+                    headers: response.headers
+                });
+            } catch (err) {
+                console.error(`[Proxy] Failed to proxy to ${targetUrl}:`, err);
+                return c.text('Project is generated but not responding.', 502);
+            }
+        } else if (project) {
+            return c.text(`Project '${project.name}' is hosted on ClickDep but is currently ${project.status}.`, 503);
+        }
+    }
+
+    await next();
+});
 
 // CORS for dashboard
 app.use('*', cors());
