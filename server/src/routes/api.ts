@@ -10,6 +10,7 @@ import {
     getDeployment,
     getProjectStats,
 } from '../services/deployer';
+import { createProjectFromUpload } from '../services/upload';
 import { getProcessStatus, getProcessLogs } from '../services/pm2';
 
 const app = new Hono();
@@ -75,6 +76,60 @@ app.get('/projects/:id/stats', (c) => {
 
     const stats = getProjectStats(project.id);
     return c.json(stats);
+});
+
+// Create project from upload
+app.post('/projects/upload', async (c) => {
+    try {
+        const body = await c.req.parseBody();
+        const userId = c.req.header('X-User-Id');
+
+        if (!userId) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        const name = body['name'] as string;
+
+        if (!name) {
+            return c.json({ error: 'Project name is required' }, 400);
+        }
+
+        // Handle files
+        const files: { name: string; content: ArrayBuffer }[] = [];
+
+        // Hono parses multiple files with same key as array, or single file as File.
+        // We expect files to be sent with key 'files[]' or 'file'
+        // But drag-drop usually sends 'file' multiple times.
+
+        const uploadedFiles = body['files']; // Expecting 'files' key
+
+        if (uploadedFiles) {
+            const fileList = Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles];
+
+            for (const file of fileList) {
+                if (file instanceof File) {
+                    // We need the relative path. 
+                    // When using webkitdirectory (folder upload), file.webkitRelativePath is available on client but not sent directly in formData value usually.
+                    // The client needs to append the path as part of the filename or a separate field.
+                    // Simplified: We assume flat structure or client sends 'paths[]' corresponding to 'files[]'.
+                    // OR: Custom client logic sends file with name = "path/to/file.ext"
+
+                    const content = await file.arrayBuffer();
+                    files.push({ name: file.name, content });
+                }
+            }
+        }
+
+        const project = await createProjectFromUpload(userId, name, files);
+
+        // Auto-deploy (it's already set to static serve, just need to start process)
+        await fetch(`${c.req.url.replace('/projects/upload', '')}/projects/${project.id}/deploy`, { method: 'POST' });
+
+        return c.json(project);
+    } catch (err: any) {
+        console.error('Upload error:', err);
+        return c.json({ error: `Failed to create project: ${err.message}` }, 500);
+    }
 });
 
 // Create project
