@@ -8,6 +8,7 @@ import {
     stopProjectProcess,
     listDeployments,
     getDeployment,
+    getProjectStats,
 } from '../services/deployer';
 import { getProcessStatus, getProcessLogs } from '../services/pm2';
 
@@ -57,6 +58,23 @@ app.get('/projects/:id', async (c) => {
     const processStatus = await getProcessStatus(project.name);
 
     return c.json({ ...project, processStatus });
+});
+
+// Get project stats
+app.get('/projects/:id/stats', (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) {
+        return c.json({ error: 'Project not found' }, 404);
+    }
+
+    if (project.user_id !== userId) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const stats = getProjectStats(project.id);
+    return c.json(stats);
 });
 
 // Create project
