@@ -32,6 +32,24 @@ app.use('*', async (c, next) => {
             const targetUrl = `http://localhost:${project.port}${c.req.path}`;
             console.log(`[Proxy] Routing ${host}${c.req.path} -> ${targetUrl}`);
 
+            // Analytics Logging (Async - firewall and forget)
+            const logId = crypto.randomUUID();
+            const ip = c.req.header('x-forwarded-for') || c.req.header('cf-connecting-ip') || 'unknown';
+            const userAgent = c.req.header('user-agent') || 'unknown';
+
+            // We use 'db' from Schema directly since services might be circular
+            // Dynamic import to avoid circular dependency issues at top level if any
+            import('./db/schema').then(({ db }) => {
+                try {
+                    db.run(
+                        'INSERT INTO analytics (id, project_id, path, ip, user_agent) VALUES (?, ?, ?, ?, ?)',
+                        [logId, project.id, c.req.path, ip, userAgent]
+                    );
+                } catch (e) {
+                    console.error('[Analytics] Failed to log:', e);
+                }
+            });
+
             try {
                 // Forward request
                 const response = await fetch(targetUrl, {
