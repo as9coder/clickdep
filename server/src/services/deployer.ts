@@ -213,3 +213,28 @@ export async function checkForUpdates(): Promise<string[]> {
 
     return updated;
 }
+
+/**
+ * Get project analytics stats
+ */
+export function getProjectStats(projectId: string) {
+    // Total Views
+    const totalViews = db.query('SELECT COUNT(*) as count FROM analytics WHERE project_id = ?').get(projectId) as { count: number };
+
+    // Unique Visitors (IPs)
+    const uniqueVisitors = db.query('SELECT COUNT(DISTINCT ip) as count FROM analytics WHERE project_id = ?').get(projectId) as { count: number };
+
+    // Last 24h Views
+    const oneDayAgo = Math.floor(Date.now() / 1000) - (24 * 60 * 60);
+    const recentViews = db.query('SELECT COUNT(*) as count FROM analytics WHERE project_id = ? AND timestamp > ?').get(projectId, oneDayAgo) as { count: number };
+
+    // Recent Logs (for chart/list) - limit 50
+    const recentLogs = db.query('SELECT * FROM analytics WHERE project_id = ? ORDER BY timestamp DESC LIMIT 50').all(projectId);
+
+    return {
+        totalViews: totalViews?.count || 0,
+        uniqueVisitors: uniqueVisitors?.count || 0,
+        recentViews: recentViews?.count || 0,
+        logs: recentLogs
+    };
+}
