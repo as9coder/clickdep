@@ -284,7 +284,13 @@
         // If user is already logged in, redirect to dashboard
         onAuthChange((user) => {
             if (user) {
-                console.log('[Landing] User signed in, redirecting...');
+                console.log('[Landing] User signed in:', user.email);
+                console.log('[Landing] Redirecting to dashboard...');
+
+                // Add visual feedback
+                const btn = document.querySelector('button[onclick="openAuthModal(false)"]');
+                if (btn) btn.textContent = 'Redirecting...';
+
                 window.location.href = '/dashboard';
             }
         });

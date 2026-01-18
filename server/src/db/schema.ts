@@ -59,6 +59,21 @@ db.run(`
 db.run('CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id)');
 db.run('CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status)');
 
+db.run(`
+  CREATE TABLE IF NOT EXISTS analytics (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    path TEXT,
+    ip TEXT,
+    user_agent TEXT,
+    timestamp INTEGER DEFAULT (unixepoch()),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+  )
+`);
+
+db.run('CREATE INDEX IF NOT EXISTS idx_analytics_project ON analytics(project_id)');
+db.run('CREATE INDEX IF NOT EXISTS idx_analytics_timestamp ON analytics(timestamp)');
+
 export { db, DATA_DIR };
 
 // Type definitions
@@ -89,4 +104,13 @@ export interface Deployment {
   started_at: number;
   finished_at: number | null;
   log: string | null;
+}
+
+export interface AnalyticsEvent {
+  id: string;
+  project_id: string;
+  path: string;
+  ip: string;
+  user_agent: string;
+  timestamp: number;
 }
