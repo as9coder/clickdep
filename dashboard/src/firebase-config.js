@@ -51,4 +51,19 @@ export function getCurrentUser() {
     return auth.currentUser;
 }
 
+// Handle redirect result (call on page load for Google auth)
+export async function checkRedirectResult() {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+            console.log('[Auth] Google redirect completed for:', result.user.email);
+            return result.user;
+        }
+        return null;
+    } catch (error) {
+        console.error('[Auth] Redirect result error:', error);
+        throw error;
+    }
+}
+
 export { auth };

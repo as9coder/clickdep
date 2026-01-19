@@ -4,8 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — ClickDep</title>
-    <link rel="stylesheet" href="/src/dashboard.css">
+    <title>ClickDep Dashboard</title>
+    <link rel="stylesheet" href="/src/dashboard.css?v=2">
+    <!-- Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -97,33 +101,110 @@
         <div class="projects-grid hidden" id="projects-grid"></div>
     </main>
 
-    <!-- Add Project Modal -->
-    <div class="modal hidden" id="add-modal">
-        <div class="modal__backdrop"></div>
+    <!-- Create Project Modal -->
+    <div class="modal hidden" id="create-modal">
+        <div class="modal__backdrop" onclick="closeCreateModal()"></div>
         <div class="modal__content">
-            <button class="modal__close" id="close-modal">&times;</button>
-            <h2 class="modal__title">✨ New Project</h2>
-            <form id="add-form">
+            <button class="modal__close" onclick="closeCreateModal()">&times;</button>
+            <h2 class="modal__title">Create Project</h2>
+
+            <div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab('github')">Import Git</button>
+                <button class="modal-tab" onclick="switchTab('upload')">Upload</button>
+                <button class="modal-tab" onclick="switchTab('template')">Templates</button>
+            </div>
+
+            <!-- GitHub Tab -->
+            <form id="create-form" class="create-tab" onsubmit="handleCreateSubmit(event)">
                 <div class="form-group">
                     <label for="project-name">Project Name</label>
-                    <input type="text" id="project-name" placeholder="my-awesome-project" required>
+                    <input type="text" id="project-name" placeholder="my-awesome-app" required>
                 </div>
                 <div class="form-group">
-                    <label for="github-url">GitHub Repository</label>
+                    <label for="github-url">GitHub URL</label>
                     <input type="url" id="github-url" placeholder="https://github.com/username/repo" required>
                 </div>
                 <div class="form-group">
-                    <label for="branch">Branch</label>
-                    <input type="text" id="branch" placeholder="main" value="main">
+                    <label for="branch">Branch (Optional)</label>
+                    <input type="text" id="branch" placeholder="main">
                 </div>
-                <div id="form-error" class="form-error hidden"></div>
-                <button type="submit" class="btn btn--primary btn--block" id="submit-btn">
+                <button type="submit" class="btn btn--primary btn--block">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                    <span>Deploy Now</span>
+                    Import & Deploy
                 </button>
             </form>
+
+            <!-- Upload Tab -->
+            <div id="tab-upload" class="create-tab hidden">
+                <div class="dropzone" id="dropzone">
+                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <h3>Drag & Drop Files</h3>
+                    <p>Upload your website files (index.html, etc.)</p>
+                    <input type="file" id="file-input" multiple hidden>
+                </div>
+
+                <div id="file-list" class="file-list hidden"></div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="upload-name">Project Name</label>
+                    <input type="text" id="upload-name" placeholder="my-static-site">
+                </div>
+                <button class="btn btn--primary btn--block" onclick="handleUploadSubmit()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    Deploy Files
+                </button>
+            </div>
+
+            <!-- Template Tab -->
+            <div id="tab-template" class="create-tab hidden">
+                <div class="template-grid">
+                    <div class="template-card" onclick="selectTemplate('static')">
+                        <div class="template-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"
+                                height="24">
+                                <path d="M2 20h20M4 4h16v12H4z" stroke="#e34c26" />
+                                <path d="M12 8l4 4-4 4M8 12h8" stroke="#e34c26" />
+                            </svg>
+                        </div>
+                        <div class="template-name">HTML5</div>
+                        <div class="template-desc">Simple static site</div>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('react')">
+                        <div class="template-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"
+                                height="24">
+                                <circle cx="12" cy="12" r="2" stroke="#61dafb" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" transform="rotate(0 12 12)" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" transform="rotate(60 12 12)" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb"
+                                    transform="rotate(120 12 12)" />
+                            </svg>
+                        </div>
+                        <div class="template-name">React</div>
+                        <div class="template-desc">Vite + React</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="template-name">Project Name</label>
+                    <input type="text" id="template-name" placeholder="my-template-app">
+                </div>
+                <button class="btn btn--primary btn--block" onclick="handleTemplateSubmit()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Create from Template
+                </button>
+            </div>
         </div>
     </div>
 
@@ -156,6 +237,28 @@
                     <h3>Logs</h3>
                     <div class="logs-container" id="logs-container">
                         <pre id="logs-content">Loading logs...</pre>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div class="analytics-section">
+                    <h3>Analytics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="stats-total">0</div>
+                            <div class="stat-label">Total Views</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stats-unique">0</div>
+                            <div class="stat-label">Unique Visitors</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stats-24h">0</div>
+                            <div class="stat-label">Last 24h</div>
+                        </div>
+                    </div>
+                    <div class="logs-list" id="analytics-logs">
+                        <!-- Logs here -->
                     </div>
                 </div>
                 <div class="details-actions">
@@ -583,7 +686,7 @@
             }
         }
 
-        // Show details modal
+        // Show details modal and fetch analytics
         window.showDetails = async function (id) {
             currentProjectId = id;
             const project = projects.find(p => p.id === id);
@@ -598,20 +701,152 @@
 
             document.getElementById('details-modal').classList.remove('hidden');
             loadLogs(id);
-
-            // Auto-refresh logs
-            if (logsInterval) clearInterval(logsInterval);
-            logsInterval = setInterval(() => loadLogs(id), 3000);
+            loadAnalytics(id);
         };
+
+        // Load Analytics
+        async function loadAnalytics(id) {
+            try {
+                const res = await fetch(`${API}/projects/${id}/stats`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                if (!res.ok) return;
+                const stats = await res.json();
+
+                document.getElementById('stats-total').textContent = stats.totalViews;
+                document.getElementById('stats-unique').textContent = stats.uniqueVisitors;
+                document.getElementById('stats-24h').textContent = stats.recentViews;
+
+                const logsEl = document.getElementById('analytics-logs');
+                logsEl.innerHTML = stats.logs.map(log => `
+                    <div class="log-entry">
+                        <span class="log-time">${new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
+                        <span class="log-path">${log.path}</span>
+                        <span style="color: #666; font-size: 10px; margin-left: auto;">${log.ip}</span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Failed to load analytics", err);
+            }
+        }
+
+        /* --- New Creation Logic --- */
+
+        // Tab Switching
+        window.switchTab = function (tabName) {
+            // Update buttons
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.create-tab').forEach(c => c.classList.add('hidden'));
+
+            if (tabName === 'github') document.getElementById('create-form').classList.remove('hidden');
+            if (tabName === 'upload') document.getElementById('tab-upload').classList.remove('hidden');
+            if (tabName === 'template') document.getElementById('tab-template').classList.remove('hidden');
+        }
+
+        // Drag & Drop Logic
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        let droppedFiles = [];
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            droppedFiles = Array.from(files);
+            const list = document.getElementById('file-list');
+            list.classList.remove('hidden');
+            list.innerHTML = droppedFiles.map(f => `
+                <div class="file-item">
+                    <span>📄 ${f.name}</span>
+                    <span style="margin-left: auto; color: #666;">${(f.size / 1024).toFixed(1)} KB</span>
+                </div>
+            `).join('');
+        }
+
+        // Upload Submit
+        window.handleUploadSubmit = async function () {
+            const name = document.getElementById('upload-name').value;
+            if (!name) return alert('Please enter a project name');
+            if (droppedFiles.length === 0) return alert('Please upload files');
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = 'Uploading...';
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('name', name);
+            droppedFiles.forEach(f => formData.append('files', f));
+
+            try {
+                const res = await fetch(`${API}/projects/upload`, {
+                    method: 'POST',
+                    headers: { 'X-User-Id': currentUser.uid },
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error((await res.json()).error);
+
+                const project = await res.json();
+                closeAddModal(); // Changed from closeCreateModal() to closeAddModal() to match existing function
+                showDeploymentProgress(project.id, project.name); // Changed from showDeployProgress() to showDeploymentProgress() to match existing function
+            } catch (e) {
+                alert('Upload failed: ' + e.message);
+                btn.disabled = false;
+                btn.innerHTML = 'Deploy Files';
+            }
+        };
+
+        // Template Selection
+        let selectedTemplate = null;
+        window.selectTemplate = function (type) {
+            selectedTemplate = type;
+            document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+        }
+
+        window.handleTemplateSubmit = async function () {
+            if (!selectedTemplate) return alert('Select a template');
+            const name = document.getElementById('template-name').value;
+            if (!name) return alert('Enter name');
+
+            alert('Template creation not fully linked yet! (Needs backend endpoint)');
+        }
+
+        // --- End New Creation Logic ---
 
         // Load logs
         async function loadLogs(id) {
+            const pre = document.getElementById('logs-content');
             try {
-                const res = await fetch(`${API}/projects/${id}/logs?lines=50`);
-                const data = await res.json();
-                document.getElementById('logs-content').textContent = data.logs || 'No logs available';
-            } catch (err) {
-                document.getElementById('logs-content').textContent = 'Failed to load logs';
+                const res = await fetch(`${API}/projects/${id}/logs`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                const logs = await res.text();
+                pre.textContent = logs || 'No logs yet.';
+            } catch (e) {
+                pre.textContent = 'Failed to load logs';
             }
         }
 
