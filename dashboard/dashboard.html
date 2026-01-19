@@ -170,30 +170,50 @@
             <!-- Template Tab -->
             <div id="tab-template" class="create-tab hidden">
                 <div class="template-grid">
-                    <div class="template-card" onclick="selectTemplate('static')">
+                    <div class="template-card" onclick="selectTemplate('html5')">
                         <div class="template-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#e34c26" stroke-width="2" width="24"
                                 height="24">
-                                <path d="M2 20h20M4 4h16v12H4z" stroke="#e34c26" />
-                                <path d="M12 8l4 4-4 4M8 12h8" stroke="#e34c26" />
+                                <path d="M4 3l1.5 17L12 22l6.5-2L20 3H4z" />
+                                <path d="M8 8h8M8 12h6" />
                             </svg>
                         </div>
                         <div class="template-name">HTML5</div>
-                        <div class="template-desc">Simple static site</div>
+                        <div class="template-desc">Static Website</div>
                     </div>
                     <div class="template-card" onclick="selectTemplate('react')">
                         <div class="template-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#61dafb" stroke-width="1.5" width="24"
                                 height="24">
-                                <circle cx="12" cy="12" r="2" stroke="#61dafb" />
-                                <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" transform="rotate(0 12 12)" />
-                                <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" transform="rotate(60 12 12)" />
-                                <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb"
-                                    transform="rotate(120 12 12)" />
+                                <circle cx="12" cy="12" r="2" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
                             </svg>
                         </div>
                         <div class="template-name">React</div>
-                        <div class="template-desc">Vite + React</div>
+                        <div class="template-desc">Vite + React 18</div>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('vue')">
+                        <div class="template-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#42b883" stroke-width="2" width="24"
+                                height="24">
+                                <path d="M2 3h4l6 10 6-10h4L12 21 2 3z" />
+                                <path d="M6.5 3L12 12l5.5-9" stroke="#35495e" />
+                            </svg>
+                        </div>
+                        <div class="template-name">Vue</div>
+                        <div class="template-desc">Vite + Vue 3</div>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('nextjs')">
+                        <div class="template-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="24" height="24">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M8 8v8M8 8l8 10M16 8v8" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div class="template-name">Next.js</div>
+                        <div class="template-desc">React Framework</div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -855,9 +875,36 @@
         window.handleTemplateSubmit = async function () {
             if (!selectedTemplate) return alert('Select a template');
             const name = document.getElementById('template-name').value;
-            if (!name) return alert('Enter name');
+            if (!name) return alert('Enter a project name');
 
-            alert('Template creation not fully linked yet! (Needs backend endpoint)');
+            const btn = document.querySelector('#tab-template .btn--primary');
+            btn.disabled = true;
+            btn.innerHTML = 'Creating...';
+
+            try {
+                const res = await fetch(`${API}/projects/template`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': currentUser.uid
+                    },
+                    body: JSON.stringify({ name, template: selectedTemplate })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to create');
+                }
+
+                const project = await res.json();
+                closeCreateModal();
+                showDeploymentProgress(project.id, project.name);
+            } catch (e) {
+                alert('Failed: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Create from Template';
+            }
         }
 
         // --- End New Creation Logic ---

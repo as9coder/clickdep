@@ -11,6 +11,7 @@ import {
     getProjectStats,
 } from '../services/deployer';
 import { createProjectFromUpload } from '../services/upload';
+import { createProjectFromTemplate, getTemplateList } from '../services/template';
 import { getProcessStatus, getProcessLogs } from '../services/pm2';
 
 const app = new Hono();
@@ -78,6 +79,56 @@ app.get('/projects/:id/stats', (c) => {
     return c.json(stats);
 });
 
+// Get available templates
+app.get('/templates', (c) => {
+    return c.json(getTemplateList());
+});
+
+// Create project from template
+app.post('/projects/template', async (c) => {
+    try {
+        const userId = c.req.header('X-User-Id');
+        if (!userId) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        const body = await c.req.json();
+        const { name, template } = body;
+
+        if (!name || !template) {
+            return c.json({ error: 'name and template are required' }, 400);
+        }
+
+        // Sanitize name
+        const sanitizedName = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+        if (!sanitizedName || sanitizedName.length < 1) {
+            return c.json({ error: 'Invalid project name' }, 400);
+        }
+
+        // Check if name exists
+        const existing = listProjects().find(p => p.name === sanitizedName);
+        if (existing) {
+            return c.json({ error: 'Project name already exists' }, 400);
+        }
+
+        console.log(`[API] Creating template project: ${sanitizedName} from template: ${template}`);
+        const project = await createProjectFromTemplate(userId, sanitizedName, template);
+
+        // Auto-deploy
+        try {
+            await deployProject(project.id);
+        } catch (err) {
+            console.error('[API] Template auto-deploy failed:', err);
+        }
+
+        return c.json(project, 201);
+    } catch (err: any) {
+        console.error('[API] Template error:', err);
+        return c.json({ error: err.message }, 500);
+    }
+});
+
 // Create project from upload
 app.post('/projects/upload', async (c) => {
     try {
@@ -93,6 +144,9 @@ app.post('/projects/upload', async (c) => {
         if (!name) {
             return c.json({ error: 'Project name is required' }, 400);
         }
+
+        // Sanitize name
+        const sanitizedName = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
         // Handle files
         const files: { name: string; content: ArrayBuffer }[] = [];
