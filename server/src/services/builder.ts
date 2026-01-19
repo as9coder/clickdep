@@ -124,19 +124,25 @@ export async function buildProject(
     buildCommand: string | null
 ): Promise<{ success: boolean; log: string }> {
     const logs: string[] = [];
+    const pkgPath = join(repoPath, 'package.json');
+    const hasPackageJson = existsSync(pkgPath);
 
     try {
-        // Install dependencies
-        logs.push('📦 Installing dependencies...');
-        const installResult = await runCommand('npm install', repoPath);
-        logs.push(installResult.output);
+        // Only install dependencies if there's a package.json
+        if (hasPackageJson) {
+            logs.push('📦 Installing dependencies...');
+            const installResult = await runCommand('npm install', repoPath);
+            logs.push(installResult.output);
 
-        if (!installResult.success) {
-            logs.push('\n❌ npm install failed');
-            return { success: false, log: logs.join('\n') };
+            if (!installResult.success) {
+                logs.push('\n❌ npm install failed');
+                return { success: false, log: logs.join('\n') };
+            }
+        } else {
+            logs.push('📁 Static site detected (no package.json)');
         }
 
-        // Run build if command exists
+        // Run build if command exists and is not empty
         if (buildCommand && buildCommand.trim()) {
             logs.push(`\n🔨 Building: ${buildCommand}`);
             const buildResult = await runCommand(buildCommand, repoPath);
@@ -146,6 +152,8 @@ export async function buildProject(
                 logs.push('\n❌ Build command failed');
                 return { success: false, log: logs.join('\n') };
             }
+        } else {
+            logs.push('\n⚡ No build step required');
         }
 
         logs.push('\n✅ Build completed successfully!');

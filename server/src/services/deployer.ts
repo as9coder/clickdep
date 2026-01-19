@@ -97,13 +97,22 @@ export async function deployProject(id: string): Promise<Deployment> {
     db.run("UPDATE projects SET status = 'building', updated_at = unixepoch() WHERE id = ?", [id]);
 
     try {
-        // Pull latest
-        const repoInfo = await pullRepo(project.name);
+        // Check if this is a git-based project or template/upload
+        const isGitProject = project.github_url &&
+            !project.github_url.startsWith('template://') &&
+            !project.github_url.startsWith('upload://');
+
+        let commitInfo = { latestCommit: 'local', commitMessage: 'Local deployment' };
+
+        if (isGitProject) {
+            // Pull latest for git projects
+            commitInfo = await pullRepo(project.name);
+        }
 
         // Update deployment with commit info
         db.run(
             'UPDATE deployments SET commit_sha = ?, commit_message = ? WHERE id = ?',
-            [repoInfo.latestCommit, repoInfo.commitMessage, deploymentId]
+            [commitInfo.latestCommit, commitInfo.commitMessage, deploymentId]
         );
 
         // Build
