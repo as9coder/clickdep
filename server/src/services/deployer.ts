@@ -163,7 +163,7 @@ export async function deployProject(id: string): Promise<Deployment> {
         );
         db.run(
             "UPDATE projects SET status = 'running', last_commit = ?, last_deployed_at = unixepoch(), updated_at = unixepoch() WHERE id = ?",
-            [repoInfo.latestCommit, id]
+            [commitInfo.latestCommit, id]
         );
 
         return getDeployment(deploymentId)!;
