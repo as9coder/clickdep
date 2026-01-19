@@ -1148,8 +1148,9 @@ html {
 }
 
 .hero__visual {
-    animation: fadeInRight 1s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
     opacity: 0;
+    animation: fadeInRight 1s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards,
+        float 4s ease-in-out 1.2s infinite;
     animation-fill-mode: forwards;
 }
 
@@ -1248,10 +1249,6 @@ html {
     50% {
         transform: translateY(-10px);
     }
-}
-
-.hero__visual {
-    animation: fadeInRight 1s ease, float 4s ease-in-out 1s infinite;
 }
 
 /* Glow pulse for buttons */
