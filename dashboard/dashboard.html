@@ -652,7 +652,11 @@
             emptyEl.classList.add('hidden');
             gridEl.classList.remove('hidden');
 
-            gridEl.innerHTML = projects.map(p => `
+            gridEl.innerHTML = projects.map(p => {
+                const subdomain = `${p.name}.clickdep.dev`;
+                const isLive = p.status === 'running';
+
+                return `
         <div class="project-card glass" data-id="${p.id}">
           <div class="project-card__glow"></div>
           <div class="project-card__header">
@@ -661,17 +665,28 @@
           </div>
           <div class="project-card__meta">
             <span class="tag">${p.framework || 'Unknown'}</span>
-            <span class="port">${p.status === 'running' ? ':' + p.port : p.status}</span>
+            ${isLive
+                        ? `<a href="https://${subdomain}" target="_blank" class="project-url" title="Open in new tab">
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 0 0 1-2-2V8a2 0 0 1 2-2h6"/>
+                       <polyline points="15 3 21 3 21 9"/>
+                       <line x1="10" y1="14" x2="21" y2="3"/>
+                     </svg>
+                     ${subdomain}
+                   </a>`
+                        : `<span class="port">${p.status}</span>`
+                    }
           </div>
           <div class="project-card__actions">
             <button class="btn btn--ghost btn--sm" onclick="showDetails('${p.id}')">Details</button>
-            ${p.status === 'running'
-                    ? `<button class="btn btn--ghost btn--sm" onclick="stopProject('${p.id}')">Stop</button>`
-                    : `<button class="btn btn--primary btn--sm" onclick="deployProject('${p.id}')">Deploy</button>`
-                }
+            ${isLive
+                        ? `<button class="btn btn--ghost btn--sm" onclick="stopProject('${p.id}')">Stop</button>`
+                        : `<button class="btn btn--primary btn--sm" onclick="deployProject('${p.id}')">Deploy</button>`
+                    }
           </div>
         </div>
-      `).join('');
+      `;
+            }).join('');
         }
 
         // Create project
