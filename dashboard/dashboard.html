@@ -857,15 +857,21 @@
             currentProjectId = null;
         }
 
-        // Modal controls - Add Project
-        const addModal = document.getElementById('add-modal');
-        const openAddModal = () => addModal.classList.remove('hidden');
-        const closeAddModal = () => { addModal.classList.add('hidden'); document.getElementById('form-error').classList.add('hidden'); };
+        // Modal controls - Create Project
+        const createModal = document.getElementById('create-modal');
+        window.openCreateModal = () => createModal.classList.remove('hidden');
+        window.closeCreateModal = () => {
+            createModal.classList.add('hidden');
+            // Reset form
+            document.getElementById('create-form').reset();
+            document.getElementById('upload-name').value = '';
+            document.getElementById('template-name').value = '';
+            document.getElementById('file-list').classList.add('hidden');
+            droppedFiles = [];
+        };
 
-        document.getElementById('add-project-btn').addEventListener('click', openAddModal);
-        document.getElementById('add-first-project-btn').addEventListener('click', openAddModal);
-        document.getElementById('close-modal').addEventListener('click', closeAddModal);
-        addModal.querySelector('.modal__backdrop').addEventListener('click', closeAddModal);
+        document.getElementById('add-project-btn').addEventListener('click', openCreateModal);
+        document.getElementById('add-first-project-btn').addEventListener('click', openCreateModal);
 
         // Modal controls - Details
         document.getElementById('close-details').addEventListener('click', closeDetailsModal);
@@ -877,29 +883,26 @@
         // Escape key closes modals
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                closeAddModal();
+                closeCreateModal();
                 closeDetailsModal();
             }
         });
 
-        // Form submit
-        document.getElementById('add-form').addEventListener('submit', async (e) => {
+        // GitHub Form submit (create-form)
+        window.handleCreateSubmit = async function (e) {
             e.preventDefault();
 
             const name = document.getElementById('project-name').value.trim();
             const githubUrl = document.getElementById('github-url').value.trim();
             const branch = document.getElementById('branch').value.trim() || 'main';
-            const submitBtn = document.getElementById('submit-btn');
-            const errorEl = document.getElementById('form-error');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span>Creating...</span>';
-            errorEl.classList.add('hidden');
 
             try {
                 const project = await createProject(name, githubUrl, branch);
-                closeAddModal();
-                document.getElementById('add-form').reset();
+                closeCreateModal();
 
                 // Show deployment modal
                 showDeploymentProgress(project.id, project.name);
@@ -910,13 +913,12 @@
                 );
 
             } catch (err) {
-                errorEl.textContent = err.message;
-                errorEl.classList.remove('hidden');
+                alert('Error: ' + err.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg><span>Deploy Now</span>';
+                submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Import & Deploy';
             }
-        });
+        };
 
         // Track deployment progress
         let deploymentInterval = null;
