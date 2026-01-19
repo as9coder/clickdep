@@ -275,31 +275,15 @@
 
     <!-- Auth Module -->
     <script type="module">
-        import { createAuthModal } from '/src/auth.js';
-        import { onAuthChange, checkRedirectResult } from '/src/firebase-config.js';
+        import { createAuthModal } from '/src/auth.js?v=3';
+        import { onAuthChange } from '/src/firebase-config.js?v=3';
 
         createAuthModal();
-
-        // Handle Google redirect result (if returning from Google auth)
-        checkRedirectResult().then(user => {
-            if (user) {
-                console.log('[Landing] Google auth completed, redirecting...');
-                window.location.href = '/dashboard';
-            }
-        }).catch(err => {
-            console.error('[Landing] Redirect result error:', err);
-        });
 
         // If user is already logged in, redirect to dashboard
         onAuthChange((user) => {
             if (user) {
                 console.log('[Landing] User signed in:', user.email);
-                console.log('[Landing] Redirecting to dashboard...');
-
-                // Add visual feedback
-                const btn = document.querySelector('button[onclick="openAuthModal(false)"]');
-                if (btn) btn.textContent = 'Redirecting...';
-
                 window.location.href = '/dashboard';
             }
         });

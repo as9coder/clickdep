@@ -123,13 +123,17 @@ async function handleAuthSubmit(e) {
 async function handleGoogleSignIn() {
     const btn = document.getElementById('google-signin');
     btn.disabled = true;
-    btn.innerHTML = 'Redirecting...';
+    btn.innerHTML = 'Signing in...';
     hideError();
 
     try {
-        // This triggers a full page redirect
-        await signInWithGoogle();
-        // Code below this line won't execute if redirect works
+        // signInWithPopup returns the result directly
+        const result = await signInWithGoogle();
+        if (result && result.user) {
+            console.log('[Auth] Google sign in success:', result.user.email);
+            closeAuthModal();
+            window.location.href = '/dashboard';
+        }
     } catch (error) {
         console.error('Google Auth error:', error);
         showError(getErrorMessage(error.code));
