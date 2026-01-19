@@ -542,21 +542,45 @@
     </style>
 
     <script type="module">
-        import { onAuthChange, logOut, getCurrentUser } from '/src/firebase-config.js';
+        import { onAuthChange, logOut, getCurrentUser } from '/src/firebase-config.js?v=4';
 
         const API = '/api';
         let projects = [];
         let currentProjectId = null;
         let logsInterval = null;
         let currentUser = null;
+        let authChecked = false;
 
-        // Auth check
+        // Auth check - wait for Firebase to fully initialize
         onAuthChange((user) => {
+            console.log('[Dashboard] Auth state changed:', user ? user.email : 'null');
+
+            // If auth has been checked before and user is null, redirect
+            // If this is the first check and user is null, wait a bit for auth to initialize
             if (!user) {
-                window.location.href = '/';
-                return;
+                if (authChecked) {
+                    // Already checked once, user is definitely not logged in
+                    console.log('[Dashboard] User not authenticated, redirecting...');
+                    window.location.href = '/';
+                    return;
+                } else {
+                    // First check - might be auth still initializing, wait a moment
+                    authChecked = true;
+                    setTimeout(() => {
+                        // Check again after Firebase has had time to restore session
+                        const currentAuthUser = getCurrentUser();
+                        if (!currentAuthUser) {
+                            console.log('[Dashboard] Auth timeout - no user, redirecting...');
+                            window.location.href = '/';
+                        }
+                    }, 1500);
+                    return;
+                }
             }
+
+            authChecked = true;
             currentUser = user;
+            console.log('[Dashboard] User authenticated:', user.email);
             document.getElementById('user-email').textContent = user.email || 'User';
             document.getElementById('user-avatar').textContent = (user.email || 'U')[0].toUpperCase();
 
