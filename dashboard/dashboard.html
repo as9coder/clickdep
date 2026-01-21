@@ -1214,35 +1214,35 @@
             } catch (e) {
                 alert('Failed to delete file: ' + e.message);
             }
-        }
+        };
 
-            // Resizable sidebar
-            (function () {
-                const sidebar = document.getElementById('pv-sidebar');
-                const resize = document.getElementById('pv-sidebar-resize');
-                if (!sidebar || !resize) return;
+        // Resizable sidebar
+        (function () {
+            const sidebar = document.getElementById('pv-sidebar');
+            const resize = document.getElementById('pv-sidebar-resize');
+            if (!sidebar || !resize) return;
 
-                let isResizing = false;
+            let isResizing = false;
 
-                resize.addEventListener('mousedown', (e) => {
-                    isResizing = true;
-                    document.body.style.cursor = 'col-resize';
-                    document.body.style.userSelect = 'none';
-                });
+            resize.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
 
-                document.addEventListener('mousemove', (e) => {
-                    if (!isResizing) return;
-                    const rect = sidebar.parentElement.getBoundingClientRect();
-                    const newWidth = Math.min(Math.max(e.clientX - rect.left, 150), 500);
-                    sidebar.style.width = newWidth + 'px';
-                });
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const rect = sidebar.parentElement.getBoundingClientRect();
+                const newWidth = Math.min(Math.max(e.clientX - rect.left, 150), 500);
+                sidebar.style.width = newWidth + 'px';
+            });
 
-                document.addEventListener('mouseup', () => {
-                    isResizing = false;
-                    document.body.style.cursor = '';
-                    document.body.style.userSelect = '';
-                });
-            })();
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            });
+        })();
 
         // --- End Editor Enhancements ---
 
