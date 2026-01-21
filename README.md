@@ -95,3 +95,61 @@ clickdep/
 ## License
 
 MIT
+
+---
+
+## Developer Documentation
+
+### Architecture
+
+```
+clickdep/
+├── server/                 # Backend (Bun + Hono)
+│   └── src/
+│       ├── index.ts        # Main server + subdomain routing
+│       ├── routes/api.ts   # All API endpoints
+│       └── services/
+│           ├── github.ts   # Git clone/pull
+│           ├── builder.ts  # npm install + build
+│           ├── deployer.ts # PM2 deployment
+│           └── template.ts # Project templates
+│
+├── dashboard/              # Frontend (Vanilla HTML/CSS/JS)
+│   ├── dashboard.html      # Main dashboard
+│   ├── landing.html        # Public landing
+│   └── src/dashboard.css   # Styles
+```
+
+### Key API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/projects` | GET/POST | List/create projects |
+| `/api/projects/template` | POST | Create from template |
+| `/api/projects/:id/deploy` | POST | Deploy project |
+| `/api/projects/:id/files` | GET | List project files |
+| `/api/projects/:id/files/*` | GET/PUT/DELETE | Read/write/delete files |
+| `/api/projects/:id/apply` | POST | Rebuild + redeploy |
+
+### Code Editor Feature
+
+The dashboard includes a Monaco Editor (VS Code's editor) with:
+- Syntax highlighting for JS/TS/HTML/CSS/JSON
+- Auto-save (1.5s after typing)
+- Ctrl+S manual save
+- Create/delete files
+- File search
+- Resizable sidebar
+- Apply Changes (rebuild + deploy)
+
+### Subdomain Routing
+
+Projects are accessible at `{project-name}.clickdep.dev`. The server extracts subdomain from host header and proxies to the project's PM2 port.
+
+### Templates
+
+Defined in `server/src/services/template.ts`:
+- **html5** - Static HTML (no build)
+- **react** - Vite + React
+- **vue** - Vite + Vue
+- **nextjs** - Next.js with SSR
