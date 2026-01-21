@@ -843,76 +843,13 @@
             if (tabName === 'template') document.getElementById('tab-template').classList.remove('hidden');
         }
 
-        // Drag & Drop Logic
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('file-input');
+        // Drag & Drop Logic - DISABLED (Coming Soon)
+        // Elements removed, keeping stub for future
         let droppedFiles = [];
 
-        dropzone.addEventListener('click', () => fileInput.click());
-
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
-
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        function handleFiles(files) {
-            droppedFiles = Array.from(files);
-            const list = document.getElementById('file-list');
-            list.classList.remove('hidden');
-            list.innerHTML = droppedFiles.map(f => `
-                <div class="file-item">
-                    <span>📄 ${f.name}</span>
-                    <span style="margin-left: auto; color: #666;">${(f.size / 1024).toFixed(1)} KB</span>
-                </div>
-            `).join('');
-        }
-
-        // Upload Submit
-        window.handleUploadSubmit = async function () {
-            const name = document.getElementById('upload-name').value;
-            if (!name) return alert('Please enter a project name');
-            if (droppedFiles.length === 0) return alert('Please upload files');
-
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerHTML = 'Uploading...';
-
-            // Create FormData
-            const formData = new FormData();
-            formData.append('name', name);
-            droppedFiles.forEach(f => formData.append('files', f));
-
-            try {
-                const res = await fetch(`${API}/projects/upload`, {
-                    method: 'POST',
-                    headers: { 'X-User-Id': currentUser.uid },
-                    body: formData
-                });
-
-                if (!res.ok) throw new Error((await res.json()).error);
-
-                const project = await res.json();
-                closeAddModal(); // Changed from closeCreateModal() to closeAddModal() to match existing function
-                showDeploymentProgress(project.id, project.name); // Changed from showDeployProgress() to showDeploymentProgress() to match existing function
-            } catch (e) {
-                alert('Upload failed: ' + e.message);
-                btn.disabled = false;
-                btn.innerHTML = 'Deploy Files';
-            }
+        // Upload Submit - DISABLED (Coming Soon)
+        window.handleUploadSubmit = function () {
+            alert('Upload feature is coming soon! Use Templates or Git import for now.');
         };
 
         // Template Selection
