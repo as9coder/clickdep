@@ -1047,21 +1047,30 @@
                         tabSize: 2,
                         wordWrap: 'on'
                     });
-
-                    // Listen for changes
-                    monacoEditor.onDidChangeModelContent(() => {
-                        hasUnsavedChanges = true;
-                        document.getElementById('pv-editor-status').textContent = 'Unsaved';
-
-                        clearTimeout(saveTimeout);
-                        saveTimeout = setTimeout(saveCurrentFile, 1500);
-                    });
                 } else {
-                    // Update existing editor
+                    // Cancel any pending auto-saves first!
+                    clearTimeout(saveTimeout);
+
+                    // Dispose old model to prevent memory leaks
+                    const oldModel = monacoEditor.getModel();
+
+                    // Update content and language
                     const lang = getMonacoLanguage(filePath);
                     const model = monaco.editor.createModel(data.content, lang);
                     monacoEditor.setModel(model);
+
+                    // Dispose old model after setting new one
+                    if (oldModel) oldModel.dispose();
                 }
+
+                // Always reattach change listener after model switch
+                monacoEditor.onDidChangeModelContent(() => {
+                    hasUnsavedChanges = true;
+                    document.getElementById('pv-editor-status').textContent = 'Unsaved';
+
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(saveCurrentFile, 1500);
+                });
 
                 document.getElementById('pv-editor-status').textContent = 'Saved';
                 document.getElementById('pv-apply-btn').disabled = false;
