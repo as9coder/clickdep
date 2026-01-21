@@ -12,6 +12,8 @@
         rel="stylesheet">
     <!-- Lenis Smooth Scroll -->
     <script src="https://unpkg.com/@studio-freight/lenis@1.0.29/dist/lenis.min.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 </head>
 
 <body>
@@ -138,33 +140,16 @@
                 </button>
             </form>
 
-            <!-- Upload Tab -->
+            <!-- Upload Tab (Coming Soon) -->
             <div id="tab-upload" class="create-tab hidden">
-                <div class="dropzone" id="dropzone">
-                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="17 8 12 3 7 8" />
-                        <line x1="12" y1="3" x2="12" y2="15" />
+                <div class="coming-soon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
                     </svg>
-                    <h3>Drag & Drop Files</h3>
-                    <p>Upload your website files (index.html, etc.)</p>
-                    <input type="file" id="file-input" multiple hidden>
+                    <h3>Coming Soon</h3>
+                    <p>File upload feature is under development. Use Templates or Git import for now.</p>
                 </div>
-
-                <div id="file-list" class="file-list hidden"></div>
-
-                <div class="form-group" style="margin-top: 20px;">
-                    <label for="upload-name">Project Name</label>
-                    <input type="text" id="upload-name" placeholder="my-static-site">
-                </div>
-                <button class="btn btn--primary btn--block" onclick="handleUploadSubmit()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="17 8 12 3 7 8" />
-                        <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                    Deploy Files
-                </button>
             </div>
 
             <!-- Template Tab -->
@@ -230,68 +215,103 @@
         </div>
     </div>
 
-    <!-- Project Details Modal -->
-    <div class="modal hidden" id="details-modal">
-        <div class="modal__backdrop"></div>
-        <div class="modal__content" style="max-width: 600px;">
-            <button class="modal__close" id="close-details">&times;</button>
-            <h2 class="modal__title" id="details-title">Project Details</h2>
-            <div id="details-content">
-                <div class="details-info">
-                    <div class="detail-row">
-                        <span class="detail-label">Status</span>
-                        <span class="detail-value" id="detail-status">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Framework</span>
-                        <span class="detail-value" id="detail-framework">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Port</span>
-                        <span class="detail-value" id="detail-port">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">GitHub</span>
-                        <a class="detail-value detail-link" id="detail-github" href="#" target="_blank">-</a>
-                    </div>
-                </div>
-                <div class="logs-section">
-                    <h3>Logs</h3>
-                    <div class="logs-container" id="logs-container">
-                        <pre id="logs-content">Loading logs...</pre>
-                    </div>
-                </div>
+    <!-- Project Detail View (Full Screen) -->
+    <div class="project-view hidden" id="project-view">
+        <div class="project-view__header">
+            <button class="btn btn--ghost" onclick="closeProjectView()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back
+            </button>
+            <h1 class="project-view__title" id="pv-title">Project Name</h1>
+            <div class="project-view__actions">
+                <a class="btn btn--ghost" id="pv-visit" href="#" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Visit
+                </a>
+            </div>
+        </div>
 
-                <!-- Analytics Section -->
-                <div class="analytics-section">
-                    <h3>Analytics</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value" id="stats-total">0</div>
-                            <div class="stat-label">Total Views</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="stats-unique">0</div>
-                            <div class="stat-label">Unique Visitors</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="stats-24h">0</div>
-                            <div class="stat-label">Last 24h</div>
-                        </div>
+        <div class="project-view__tabs">
+            <button class="pv-tab active" data-tab="overview">Overview</button>
+            <button class="pv-tab" data-tab="logs">Logs</button>
+            <button class="pv-tab" data-tab="editor">Editor</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div class="pv-content active" id="tab-overview">
+            <div class="pv-overview">
+                <div class="pv-info-grid">
+                    <div class="pv-info-card glass">
+                        <div class="pv-info-label">Status</div>
+                        <div class="pv-info-value" id="pv-status">-</div>
                     </div>
-                    <div class="logs-list" id="analytics-logs">
-                        <!-- Logs here -->
+                    <div class="pv-info-card glass">
+                        <div class="pv-info-label">Framework</div>
+                        <div class="pv-info-value" id="pv-framework">-</div>
+                    </div>
+                    <div class="pv-info-card glass">
+                        <div class="pv-info-label">Port</div>
+                        <div class="pv-info-value" id="pv-port">-</div>
+                    </div>
+                    <div class="pv-info-card glass">
+                        <div class="pv-info-label">URL</div>
+                        <div class="pv-info-value"><a id="pv-url" href="#" target="_blank">-</a></div>
                     </div>
                 </div>
-                <div class="details-actions">
-                    <button class="btn btn--primary" id="detail-deploy-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                        Deploy
-                    </button>
-                    <button class="btn btn--ghost" id="detail-stop-btn">Stop</button>
-                    <button class="btn btn--ghost" id="detail-delete-btn" style="color: #ef4444;">Delete</button>
+                <div class="pv-actions">
+                    <button class="btn btn--primary" id="pv-deploy-btn">Deploy</button>
+                    <button class="btn btn--ghost" id="pv-stop-btn">Stop</button>
+                    <button class="btn btn--ghost pv-delete-btn" id="pv-delete-btn">Delete Project</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div class="pv-content" id="tab-logs">
+            <div class="pv-logs">
+                <div class="pv-logs__header">
+                    <h3>Deployment Logs</h3>
+                    <button class="btn btn--ghost btn--sm" onclick="refreshProjectLogs()">Refresh</button>
+                </div>
+                <pre class="pv-logs__content" id="pv-logs-content">Loading logs...</pre>
+            </div>
+        </div>
+
+        <!-- Editor Tab -->
+        <div class="pv-content" id="tab-editor">
+            <div class="pv-editor">
+                <div class="pv-editor__sidebar glass">
+                    <div class="pv-editor__files-header">Files</div>
+                    <div class="pv-editor__tree" id="pv-file-tree">Loading...</div>
+                </div>
+                <div class="pv-editor__main">
+                    <div class="pv-editor__toolbar">
+                        <span class="pv-editor__filename" id="pv-current-file">Select a file</span>
+                        <div class="pv-editor__status" id="pv-editor-status"></div>
+                        <button class="btn btn--primary" id="pv-apply-btn" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                            Apply Changes
+                        </button>
+                    </div>
+                    <div class="pv-editor__code" id="pv-editor-area">
+                        <div class="pv-editor__placeholder" id="pv-editor-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48"
+                                height="48">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                            </svg>
+                            <p>Select a file from the sidebar to edit</p>
+                        </div>
+                        <div id="monaco-container" class="monaco-container hidden"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -678,7 +698,7 @@
                     }
           </div>
           <div class="project-card__actions">
-            <button class="btn btn--ghost btn--sm" onclick="showDetails('${p.id}')">Details</button>
+            <button class="btn btn--ghost btn--sm" onclick="openProjectView('${p.id}')">Details</button>
             ${isLive
                         ? `<button class="btn btn--ghost btn--sm" onclick="stopProject('${p.id}')">Stop</button>`
                         : `<button class="btn btn--primary btn--sm" onclick="deployProject('${p.id}')">Deploy</button>`
@@ -923,6 +943,302 @@
         }
 
         // --- End New Creation Logic ---
+
+        // ==========================================
+        // PROJECT VIEW LOGIC
+        // ==========================================
+        let currentProject = null;
+        let editorFiles = [];
+        let currentFilePath = null;
+        let hasUnsavedChanges = false;
+
+        // Open project view
+        window.openProjectView = async function (projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+
+            currentProject = project;
+            currentFilePath = null;
+            hasUnsavedChanges = false;
+
+            // Populate data
+            document.getElementById('pv-title').textContent = project.name;
+            document.getElementById('pv-status').textContent = project.status;
+            document.getElementById('pv-framework').textContent = project.framework || 'Unknown';
+            document.getElementById('pv-port').textContent = project.port || '-';
+
+            const url = `${project.name}.clickdep.dev`;
+            document.getElementById('pv-url').textContent = url;
+            document.getElementById('pv-url').href = `https://${url}`;
+            document.getElementById('pv-visit').href = `https://${url}`;
+
+            // Show project view
+            document.getElementById('project-view').classList.remove('hidden');
+
+            // Reset to overview tab
+            switchPvTab('overview');
+
+            // Load logs
+            refreshProjectLogs();
+
+            // Load files for editor
+            loadProjectFiles();
+        }
+
+        // Close project view
+        window.closeProjectView = function () {
+            if (hasUnsavedChanges && !confirm('You have unsaved changes. Discard?')) return;
+            document.getElementById('project-view').classList.add('hidden');
+            currentProject = null;
+            currentFilePath = null;
+            hasUnsavedChanges = false;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.pv-tab').forEach(tab => {
+            tab.addEventListener('click', () => switchPvTab(tab.dataset.tab));
+        });
+
+        function switchPvTab(tabName) {
+            document.querySelectorAll('.pv-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.pv-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`.pv-tab[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // Refresh logs
+        window.refreshProjectLogs = async function () {
+            if (!currentProject) return;
+            const pre = document.getElementById('pv-logs-content');
+            try {
+                const res = await fetch(`${API}/projects/${currentProject.id}/logs`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                const logs = await res.text();
+                pre.textContent = logs || 'No logs yet.';
+            } catch (e) {
+                pre.textContent = 'Failed to load logs';
+            }
+        }
+
+        // Load project files
+        async function loadProjectFiles() {
+            if (!currentProject) return;
+            const tree = document.getElementById('pv-file-tree');
+            tree.innerHTML = 'Loading...';
+
+            try {
+                const res = await fetch(`${API}/projects/${currentProject.id}/files`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                editorFiles = await res.json();
+
+                // Sort: folders first, then files
+                editorFiles.sort((a, b) => {
+                    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+                    return a.path.localeCompare(b.path);
+                });
+
+                // Render tree
+                tree.innerHTML = editorFiles.filter(f => f.type === 'file').map(f => `
+                    <div class="file-tree-item" data-path="${f.path}" onclick="loadFile('${f.path}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        ${f.name}
+                    </div>
+                `).join('') || '<p style="color:var(--text-secondary);padding:12px;">No files</p>';
+            } catch (e) {
+                tree.innerHTML = '<p style="color:#ef4444;padding:12px;">Failed to load files</p>';
+            }
+        }
+
+        // Monaco Editor instance
+        let monacoEditor = null;
+        let monacoReady = false;
+
+        // Initialize Monaco
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            monacoReady = true;
+            console.log('[Monaco] Editor loaded');
+
+            // Set dark theme
+            monaco.editor.defineTheme('clickdep-dark', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [],
+                colors: {
+                    'editor.background': '#0a0a0f',
+                    'editorLineNumber.foreground': '#555',
+                    'editor.lineHighlightBackground': '#1a1a2e'
+                }
+            });
+        });
+
+        // Get language from file extension
+        function getMonacoLanguage(filePath) {
+            const ext = filePath.split('.').pop().toLowerCase();
+            const langMap = {
+                'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript',
+                'html': 'html', 'htm': 'html', 'css': 'css', 'scss': 'scss', 'less': 'less',
+                'json': 'json', 'md': 'markdown', 'py': 'python', 'vue': 'html',
+                'xml': 'xml', 'yaml': 'yaml', 'yml': 'yaml', 'sh': 'shell'
+            };
+            return langMap[ext] || 'plaintext';
+        }
+
+        // Load file content
+        window.loadFile = async function (filePath) {
+            if (!currentProject) return;
+            if (!monacoReady) return alert('Editor loading, please wait...');
+
+            // Warn about unsaved changes
+            if (hasUnsavedChanges && !confirm('Discard unsaved changes?')) return;
+
+            currentFilePath = filePath;
+            hasUnsavedChanges = false;
+
+            // Highlight active file
+            document.querySelectorAll('.file-tree-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.path === filePath);
+            });
+
+            document.getElementById('pv-current-file').textContent = filePath;
+            document.getElementById('pv-editor-status').textContent = 'Loading...';
+
+            const container = document.getElementById('monaco-container');
+            const placeholder = document.getElementById('pv-editor-placeholder');
+
+            try {
+                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodeURIComponent(filePath)}`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                const data = await res.json();
+
+                // Hide placeholder, show Monaco
+                placeholder.style.display = 'none';
+                container.classList.remove('hidden');
+
+                // Create or update Monaco editor
+                if (!monacoEditor) {
+                    monacoEditor = monaco.editor.create(container, {
+                        value: data.content,
+                        language: getMonacoLanguage(filePath),
+                        theme: 'clickdep-dark',
+                        fontSize: 14,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        minimap: { enabled: true },
+                        automaticLayout: true,
+                        scrollBeyondLastLine: false,
+                        lineNumbers: 'on',
+                        renderLineHighlight: 'all',
+                        tabSize: 2,
+                        wordWrap: 'on'
+                    });
+
+                    // Listen for changes
+                    monacoEditor.onDidChangeModelContent(() => {
+                        hasUnsavedChanges = true;
+                        document.getElementById('pv-editor-status').textContent = 'Unsaved';
+
+                        clearTimeout(saveTimeout);
+                        saveTimeout = setTimeout(saveCurrentFile, 1500);
+                    });
+                } else {
+                    // Update existing editor
+                    const lang = getMonacoLanguage(filePath);
+                    const model = monaco.editor.createModel(data.content, lang);
+                    monacoEditor.setModel(model);
+                }
+
+                document.getElementById('pv-editor-status').textContent = 'Saved';
+                document.getElementById('pv-apply-btn').disabled = false;
+            } catch (e) {
+                document.getElementById('pv-editor-status').textContent = 'Failed to load';
+            }
+        }
+
+        // Auto-save timeout
+        let saveTimeout;
+
+        // Save file
+        async function saveCurrentFile() {
+            if (!currentProject || !currentFilePath || !monacoEditor) return;
+
+            const content = monacoEditor.getValue();
+            document.getElementById('pv-editor-status').textContent = 'Saving...';
+
+            try {
+                await fetch(`${API}/projects/${currentProject.id}/files/${encodeURIComponent(currentFilePath)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': currentUser.uid
+                    },
+                    body: JSON.stringify({ content })
+                });
+                hasUnsavedChanges = false;
+                document.getElementById('pv-editor-status').textContent = 'Saved';
+            } catch (e) {
+                document.getElementById('pv-editor-status').textContent = 'Save failed!';
+            }
+        }
+
+        // Apply changes (rebuild & deploy)
+        document.getElementById('pv-apply-btn').addEventListener('click', async () => {
+            if (!currentProject) return;
+
+            // Save current file first
+            if (hasUnsavedChanges) await saveCurrentFile();
+
+            const btn = document.getElementById('pv-apply-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Deploying...';
+
+            try {
+                const res = await fetch(`${API}/projects/${currentProject.id}/apply`, {
+                    method: 'POST',
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+
+                if (!res.ok) throw new Error('Deploy failed');
+
+                btn.innerHTML = '✓ Deployed';
+                await loadProjects();
+                setTimeout(() => {
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Apply Changes`;
+                    btn.disabled = false;
+                }, 2000);
+            } catch (e) {
+                btn.innerHTML = 'Deploy Failed';
+                btn.disabled = false;
+            }
+        });
+
+        // Project actions in overview
+        document.getElementById('pv-deploy-btn').addEventListener('click', async () => {
+            if (!currentProject) return;
+            await deployProject(currentProject.id);
+            closeProjectView();
+        });
+
+        document.getElementById('pv-stop-btn').addEventListener('click', async () => {
+            if (!currentProject) return;
+            await stopProject(currentProject.id);
+            closeProjectView();
+        });
+
+        document.getElementById('pv-delete-btn').addEventListener('click', async () => {
+            if (!currentProject) return;
+            if (!confirm('Delete this project permanently?')) return;
+            await deleteProject(currentProject.id);
+            closeProjectView();
+        });
+
+        // --- End Project View Logic ---
 
         // Load logs
         async function loadLogs(id) {

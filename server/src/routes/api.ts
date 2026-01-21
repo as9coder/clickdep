@@ -414,4 +414,138 @@ app.get('/admin/projects/:id/download', async (c) => {
     });
 });
 
+// ============================================
+// File Operations API (for code editor)
+// ============================================
+
+// List all files in project
+app.get('/projects/:id/files', async (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    if (project.user_id !== userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { getRepoPath } = await import('../services/github');
+    const { readdirSync, statSync } = await import('fs');
+    const { join, relative } = await import('path');
+
+    const repoPath = getRepoPath(project.name);
+    const files: { path: string; name: string; type: 'file' | 'dir'; size?: number }[] = [];
+
+    function walkDir(dir: string) {
+        try {
+            const entries = readdirSync(dir);
+            for (const entry of entries) {
+                // Skip node_modules, .git, dist, build folders
+                if (['node_modules', '.git', 'dist', 'build', '.next'].includes(entry)) continue;
+
+                const fullPath = join(dir, entry);
+                const relativePath = relative(repoPath, fullPath);
+                const stat = statSync(fullPath);
+
+                if (stat.isDirectory()) {
+                    files.push({ path: relativePath, name: entry, type: 'dir' });
+                    walkDir(fullPath);
+                } else {
+                    files.push({ path: relativePath, name: entry, type: 'file', size: stat.size });
+                }
+            }
+        } catch (e) {
+            console.error('Error walking dir:', e);
+        }
+    }
+
+    walkDir(repoPath);
+    return c.json(files);
+});
+
+// Read file content
+app.get('/projects/:id/files/*', async (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    if (project.user_id !== userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { getRepoPath } = await import('../services/github');
+    const { readFileSync, existsSync } = await import('fs');
+    const { join } = await import('path');
+
+    const filePath = c.req.path.split('/files/')[1];
+    if (!filePath) return c.json({ error: 'File path required' }, 400);
+
+    const repoPath = getRepoPath(project.name);
+    const fullPath = join(repoPath, decodeURIComponent(filePath));
+
+    // Security: ensure path is within repo
+    if (!fullPath.startsWith(repoPath)) {
+        return c.json({ error: 'Invalid path' }, 403);
+    }
+
+    if (!existsSync(fullPath)) {
+        return c.json({ error: 'File not found' }, 404);
+    }
+
+    try {
+        const content = readFileSync(fullPath, 'utf-8');
+        return c.json({ content, path: filePath });
+    } catch (e) {
+        return c.json({ error: 'Failed to read file' }, 500);
+    }
+});
+
+// Write file content
+app.put('/projects/:id/files/*', async (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    if (project.user_id !== userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { getRepoPath } = await import('../services/github');
+    const { writeFileSync } = await import('fs');
+    const { join } = await import('path');
+
+    const filePath = c.req.path.split('/files/')[1];
+    if (!filePath) return c.json({ error: 'File path required' }, 400);
+
+    const body = await c.req.json();
+    if (!body.content && body.content !== '') {
+        return c.json({ error: 'Content required' }, 400);
+    }
+
+    const repoPath = getRepoPath(project.name);
+    const fullPath = join(repoPath, decodeURIComponent(filePath));
+
+    // Security: ensure path is within repo
+    if (!fullPath.startsWith(repoPath)) {
+        return c.json({ error: 'Invalid path' }, 403);
+    }
+
+    try {
+        writeFileSync(fullPath, body.content, 'utf-8');
+        return c.json({ success: true, path: filePath });
+    } catch (e) {
+        return c.json({ error: 'Failed to write file' }, 500);
+    }
+});
+
+// Apply changes (rebuild and redeploy)
+app.post('/projects/:id/apply', async (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    if (project.user_id !== userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    try {
+        const deployment = await deployProject(project.id);
+        return c.json({ success: true, deployment });
+    } catch (err: any) {
+        return c.json({ error: err.message }, 500);
+    }
+});
+
 export default app;
+
