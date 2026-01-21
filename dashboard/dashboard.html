@@ -783,50 +783,6 @@
             }
         }
 
-        // Show details modal and fetch analytics
-        window.showDetails = async function (id) {
-            currentProjectId = id;
-            const project = projects.find(p => p.id === id);
-            if (!project) return;
-
-            document.getElementById('details-title').textContent = project.name;
-            document.getElementById('detail-status').innerHTML = `<span class="status-badge ${project.status}">${project.status}</span>`;
-            document.getElementById('detail-framework').textContent = project.framework || 'Unknown';
-            document.getElementById('detail-port').textContent = project.port ? ':' + project.port : '-';
-            document.getElementById('detail-github').href = project.github_url;
-            document.getElementById('detail-github').textContent = project.github_url.replace('https://github.com/', '');
-
-            document.getElementById('details-modal').classList.remove('hidden');
-            loadLogs(id);
-            loadAnalytics(id);
-        };
-
-        // Load Analytics
-        async function loadAnalytics(id) {
-            try {
-                const res = await fetch(`${API}/projects/${id}/stats`, {
-                    headers: { 'X-User-Id': currentUser.uid }
-                });
-                if (!res.ok) return;
-                const stats = await res.json();
-
-                document.getElementById('stats-total').textContent = stats.totalViews;
-                document.getElementById('stats-unique').textContent = stats.uniqueVisitors;
-                document.getElementById('stats-24h').textContent = stats.recentViews;
-
-                const logsEl = document.getElementById('analytics-logs');
-                logsEl.innerHTML = stats.logs.map(log => `
-                    <div class="log-entry">
-                        <span class="log-time">${new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
-                        <span class="log-path">${log.path}</span>
-                        <span style="color: #666; font-size: 10px; margin-left: auto;">${log.ip}</span>
-                    </div>
-                `).join('');
-            } catch (err) {
-                console.error("Failed to load analytics", err);
-            }
-        }
-
         /* --- New Creation Logic --- */
 
         // Tab Switching
@@ -1299,27 +1255,6 @@
 
         // --- End Project View Logic ---
 
-        // Load logs
-        async function loadLogs(id) {
-            const pre = document.getElementById('logs-content');
-            try {
-                const res = await fetch(`${API}/projects/${id}/logs`, {
-                    headers: { 'X-User-Id': currentUser.uid }
-                });
-                const logs = await res.text();
-                pre.textContent = logs || 'No logs yet.';
-            } catch (e) {
-                pre.textContent = 'Failed to load logs';
-            }
-        }
-
-        // Close details modal
-        function closeDetailsModal() {
-            document.getElementById('details-modal').classList.add('hidden');
-            if (logsInterval) clearInterval(logsInterval);
-            currentProjectId = null;
-        }
-
         // Modal controls - Create Project
         const createModal = document.getElementById('create-modal');
         window.openCreateModal = () => createModal.classList.remove('hidden');
@@ -1327,27 +1262,18 @@
             createModal.classList.add('hidden');
             // Reset form
             document.getElementById('create-form').reset();
-            document.getElementById('upload-name').value = '';
             document.getElementById('template-name').value = '';
-            document.getElementById('file-list').classList.add('hidden');
             droppedFiles = [];
         };
 
         document.getElementById('add-project-btn').addEventListener('click', openCreateModal);
         document.getElementById('add-first-project-btn').addEventListener('click', openCreateModal);
 
-        // Modal controls - Details
-        document.getElementById('close-details').addEventListener('click', closeDetailsModal);
-        document.getElementById('details-modal').querySelector('.modal__backdrop').addEventListener('click', closeDetailsModal);
-        document.getElementById('detail-deploy-btn').addEventListener('click', () => { if (currentProjectId) deployProject(currentProjectId); });
-        document.getElementById('detail-stop-btn').addEventListener('click', () => { if (currentProjectId) stopProject(currentProjectId); });
-        document.getElementById('detail-delete-btn').addEventListener('click', () => { if (currentProjectId) deleteProject(currentProjectId); });
-
         // Escape key closes modals
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeCreateModal();
-                closeDetailsModal();
+                closeProjectView();
             }
         });
 
