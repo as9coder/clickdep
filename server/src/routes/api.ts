@@ -547,5 +547,73 @@ app.post('/projects/:id/apply', async (c) => {
     }
 });
 
+// Create new file
+app.post('/projects/:id/files', async (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    if (project.user_id !== userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { getRepoPath } = await import('../services/github');
+    const { writeFileSync, mkdirSync } = await import('fs');
+    const { join, dirname } = await import('path');
+
+    const body = await c.req.json();
+    if (!body.path) return c.json({ error: 'Path required' }, 400);
+
+    const repoPath = getRepoPath(project.name);
+    const fullPath = join(repoPath, body.path);
+
+    // Security: ensure path is within repo
+    if (!fullPath.startsWith(repoPath)) {
+        return c.json({ error: 'Invalid path' }, 403);
+    }
+
+    try {
+        // Create parent directories if needed
+        mkdirSync(dirname(fullPath), { recursive: true });
+        writeFileSync(fullPath, body.content || '', 'utf-8');
+        return c.json({ success: true, path: body.path });
+    } catch (e) {
+        return c.json({ error: 'Failed to create file' }, 500);
+    }
+});
+
+// Delete file
+app.delete('/projects/:id/files/*', async (c) => {
+    const userId = c.req.header('X-User-Id');
+    const project = getProject(c.req.param('id'));
+
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    if (project.user_id !== userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const { getRepoPath } = await import('../services/github');
+    const { unlinkSync, existsSync } = await import('fs');
+    const { join } = await import('path');
+
+    const filePath = c.req.path.split('/files/')[1];
+    if (!filePath) return c.json({ error: 'File path required' }, 400);
+
+    const repoPath = getRepoPath(project.name);
+    const fullPath = join(repoPath, decodeURIComponent(filePath));
+
+    // Security: ensure path is within repo
+    if (!fullPath.startsWith(repoPath)) {
+        return c.json({ error: 'Invalid path' }, 403);
+    }
+
+    if (!existsSync(fullPath)) {
+        return c.json({ error: 'File not found' }, 404);
+    }
+
+    try {
+        unlinkSync(fullPath);
+        return c.json({ success: true });
+    } catch (e) {
+        return c.json({ error: 'Failed to delete file' }, 500);
+    }
+});
+
 export default app;
 

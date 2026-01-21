@@ -286,14 +286,30 @@
         <!-- Editor Tab -->
         <div class="pv-content" id="tab-editor">
             <div class="pv-editor">
-                <div class="pv-editor__sidebar glass">
-                    <div class="pv-editor__files-header">Files</div>
+                <div class="pv-editor__sidebar glass" id="pv-sidebar">
+                    <div class="pv-editor__files-header">
+                        <span>Files</span>
+                        <button class="btn btn--ghost btn--icon" onclick="createNewFile()" title="New File">+</button>
+                    </div>
+                    <div class="pv-editor__search">
+                        <input type="text" id="pv-file-search" placeholder="Search files..." oninput="filterFiles()">
+                    </div>
                     <div class="pv-editor__tree" id="pv-file-tree">Loading...</div>
+                    <div class="pv-sidebar__resize" id="pv-sidebar-resize"></div>
                 </div>
                 <div class="pv-editor__main">
                     <div class="pv-editor__toolbar">
                         <span class="pv-editor__filename" id="pv-current-file">Select a file</span>
                         <div class="pv-editor__status" id="pv-editor-status"></div>
+                        <button class="btn btn--ghost btn--sm" onclick="deleteCurrentFile()" title="Delete File">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                            </svg>
+                        </button>
                         <button class="btn btn--primary" id="pv-apply-btn" disabled>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
                                 height="16">
@@ -1186,6 +1202,112 @@
                 document.getElementById('pv-editor-status').textContent = 'Save failed!';
             }
         }
+
+        // ==========================================
+        // EDITOR ENHANCEMENTS
+        // ==========================================
+
+        // Ctrl+S keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (currentProject && currentFilePath && monacoEditor) {
+                    saveCurrentFile();
+                }
+            }
+        });
+
+        // Filter files
+        window.filterFiles = function () {
+            const query = document.getElementById('pv-file-search').value.toLowerCase();
+            document.querySelectorAll('.file-tree-item').forEach(el => {
+                const path = el.dataset.path.toLowerCase();
+                el.style.display = path.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        // Create new file
+        window.createNewFile = async function () {
+            if (!currentProject) return;
+
+            const filePath = prompt('Enter file path (e.g., src/utils.js):');
+            if (!filePath) return;
+
+            try {
+                const res = await fetch(`${API}/projects/${currentProject.id}/files`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': currentUser.uid
+                    },
+                    body: JSON.stringify({ path: filePath, content: '' })
+                });
+
+                if (!res.ok) throw new Error('Failed to create file');
+
+                await loadProjectFiles();
+                loadFile(filePath);
+            } catch (e) {
+                alert('Failed to create file: ' + e.message);
+            }
+        }
+
+        // Delete current file
+        window.deleteCurrentFile = async function () {
+            if (!currentProject || !currentFilePath) return;
+            if (!confirm(`Delete ${currentFilePath}?`)) return;
+
+            try {
+                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodeURIComponent(currentFilePath)}`, {
+                    method: 'DELETE',
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+
+                if (!res.ok) throw new Error('Failed to delete file');
+
+                // Reset editor
+                currentFilePath = null;
+                hasUnsavedChanges = false;
+                document.getElementById('pv-current-file').textContent = 'Select a file';
+                document.getElementById('monaco-container').classList.add('hidden');
+                document.getElementById('pv-editor-placeholder').style.display = 'flex';
+                document.getElementById('pv-apply-btn').disabled = true;
+
+                await loadProjectFiles();
+            } catch (e) {
+                alert('Failed to delete file: ' + e.message);
+            }
+        }
+
+            // Resizable sidebar
+            (function () {
+                const sidebar = document.getElementById('pv-sidebar');
+                const resize = document.getElementById('pv-sidebar-resize');
+                if (!sidebar || !resize) return;
+
+                let isResizing = false;
+
+                resize.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    const rect = sidebar.parentElement.getBoundingClientRect();
+                    const newWidth = Math.min(Math.max(e.clientX - rect.left, 150), 500);
+                    sidebar.style.width = newWidth + 'px';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                });
+            })();
+
+        // --- End Editor Enhancements ---
 
         // Apply changes (rebuild & deploy)
         document.getElementById('pv-apply-btn').addEventListener('click', async () => {
