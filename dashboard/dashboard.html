@@ -1022,7 +1022,10 @@
             const placeholder = document.getElementById('pv-editor-placeholder');
 
             try {
-                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodeURIComponent(filePath)}`, {
+                // Encode each path segment individually, preserving slashes
+                const encodedPath = filePath.split('/').map(s => encodeURIComponent(s)).join('/');
+
+                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodedPath}`, {
                     headers: { 'X-User-Id': currentUser.uid }
                 });
                 const data = await res.json();
@@ -1090,7 +1093,10 @@
             document.getElementById('pv-editor-status').textContent = 'Saving...';
 
             try {
-                await fetch(`${API}/projects/${currentProject.id}/files/${encodeURIComponent(currentFilePath)}`, {
+                // Encode each path segment individually, preserving slashes
+                const encodedPath = currentFilePath.split('/').map(s => encodeURIComponent(s)).join('/');
+
+                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodedPath}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1098,9 +1104,16 @@
                     },
                     body: JSON.stringify({ content })
                 });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(err.error || `HTTP ${res.status}`);
+                }
+
                 hasUnsavedChanges = false;
                 document.getElementById('pv-editor-status').textContent = 'Saved';
             } catch (e) {
+                console.error('[Editor] Save failed:', e);
                 document.getElementById('pv-editor-status').textContent = 'Save failed!';
             }
         }
@@ -1160,7 +1173,10 @@
             if (!confirm(`Delete ${currentFilePath}?`)) return;
 
             try {
-                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodeURIComponent(currentFilePath)}`, {
+                // Encode each path segment individually, preserving slashes
+                const encodedPath = currentFilePath.split('/').map(s => encodeURIComponent(s)).join('/');
+
+                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodedPath}`, {
                     method: 'DELETE',
                     headers: { 'X-User-Id': currentUser.uid }
                 });
