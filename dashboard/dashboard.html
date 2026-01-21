@@ -1025,8 +1025,9 @@
                 // Encode each path segment individually, preserving slashes
                 const encodedPath = filePath.split('/').map(s => encodeURIComponent(s)).join('/');
 
-                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodedPath}`, {
-                    headers: { 'X-User-Id': currentUser.uid }
+                const res = await fetch(`${API}/projects/${currentProject.id}/files/${encodedPath}?t=${Date.now()}`, {
+                    headers: { 'X-User-Id': currentUser.uid },
+                    cache: 'no-store'
                 });
                 const data = await res.json();
 

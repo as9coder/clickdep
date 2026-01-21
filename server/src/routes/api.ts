@@ -489,6 +489,8 @@ app.get('/projects/:id/files/*', async (c) => {
 
     try {
         const content = readFileSync(fullPath, 'utf-8');
+        c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+        c.header('Pragma', 'no-cache');
         return c.json({ content, path: filePath });
     } catch (e) {
         return c.json({ error: 'Failed to read file' }, 500);
