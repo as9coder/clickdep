@@ -987,6 +987,11 @@ body::before {
     display: block;
 }
 
+#tab-overview.pv-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
 /* Overview Tab */
 .pv-info-grid {
     display: grid;
@@ -1035,8 +1040,8 @@ body::before {
     display: grid;
     grid-template-columns: 1fr 380px;
     gap: 32px;
-    height: calc(100vh - 140px);
-    min-height: 500px;
+    flex: 1;
+    min-height: 0;
 }
 
 .pv-preview-section {
