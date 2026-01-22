@@ -693,7 +693,7 @@
                 const isLive = p.status === 'running';
 
                 return `
-        <div class="project-card glass" data-id="${p.id}">
+        <div class="project-card glass" data-id="${p.id}" onclick="openProjectView('${p.id}')" style="cursor: pointer;">
           <div class="project-card__glow"></div>
           <div class="project-card__header">
             <div class="project-card__status ${p.status}"></div>
@@ -714,10 +714,10 @@
                     }
           </div>
           <div class="project-card__actions">
-            <button class="btn btn--ghost btn--sm" onclick="openProjectView('${p.id}')">Details</button>
+            <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation(); openProjectView('${p.id}')">Details</button>
             ${isLive
-                        ? `<button class="btn btn--ghost btn--sm" onclick="stopProject('${p.id}')">Stop</button>`
-                        : `<button class="btn btn--primary btn--sm" onclick="deployProject('${p.id}')">Deploy</button>`
+                        ? `<button class="btn btn--ghost btn--sm" onclick="event.stopPropagation(); stopProject('${p.id}')">Stop</button>`
+                        : `<button class="btn btn--primary btn--sm" onclick="event.stopPropagation(); deployProject('${p.id}')">Deploy</button>`
                     }
           </div>
         </div>
