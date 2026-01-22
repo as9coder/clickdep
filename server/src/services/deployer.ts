@@ -112,9 +112,20 @@ export async function deployProject(id: string, skipPull: boolean = true): Promi
         if (isGitProject && !skipPull) {
             // Pull latest for git projects (only for auto-deploys)
             commitInfo = await pullRepo(project.name);
-        } else if (isGitProject) {
-            // For manual deploys, just get current commit info without pulling
+        } else if (isGitProject && skipPull) {
+            // For manual deploys, get current local commit hash WITHOUT pulling
+            // This is crucial: we need to store the actual commit hash so polling
+            // can correctly detect when NEW commits arrive from remote
             console.log(`[Deploy] Skipping git pull for ${project.name} (preserving local edits)`);
+            try {
+                const { getRepoInfo } = await import('./github');
+                const repoInfo = await getRepoInfo(project.name);
+                if (repoInfo) {
+                    commitInfo = { latestCommit: repoInfo.latestCommit, commitMessage: 'Local deployment (editor changes)' };
+                }
+            } catch (e) {
+                console.log(`[Deploy] Could not get current commit, using 'local' marker`);
+            }
         }
 
         // Update deployment with commit info
