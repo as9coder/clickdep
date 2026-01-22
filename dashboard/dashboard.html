@@ -245,29 +245,90 @@
 
         <!-- Overview Tab -->
         <div class="pv-content active" id="tab-overview">
-            <div class="pv-overview">
-                <div class="pv-info-grid">
-                    <div class="pv-info-card glass">
-                        <div class="pv-info-label">Status</div>
-                        <div class="pv-info-value" id="pv-status">-</div>
-                    </div>
-                    <div class="pv-info-card glass">
-                        <div class="pv-info-label">Framework</div>
-                        <div class="pv-info-value" id="pv-framework">-</div>
-                    </div>
-                    <div class="pv-info-card glass">
-                        <div class="pv-info-label">Domain</div>
-                        <div class="pv-info-value" id="pv-domain">-</div>
-                    </div>
-                    <div class="pv-info-card glass">
-                        <div class="pv-info-label">URL</div>
-                        <div class="pv-info-value"><a id="pv-url" href="#" target="_blank">-</a></div>
+            <div class="pv-overview-new">
+                <!-- Left: Live Preview -->
+                <div class="pv-preview-section">
+                    <div class="pv-preview-frame glass">
+                        <div class="pv-preview-toolbar">
+                            <div class="pv-preview-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span class="pv-preview-url" id="pv-preview-url">-</span>
+                            <a class="pv-preview-open" id="pv-preview-open" href="#" target="_blank"
+                                title="Open in new tab">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                    <polyline points="15 3 21 3 21 9" />
+                                    <line x1="10" y1="14" x2="21" y2="3" />
+                                </svg>
+                            </a>
+                        </div>
+                        <iframe id="pv-preview-iframe" class="pv-preview-iframe" src="about:blank"></iframe>
                     </div>
                 </div>
-                <div class="pv-actions">
-                    <button class="btn btn--primary" id="pv-deploy-btn">Deploy</button>
-                    <button class="btn btn--ghost" id="pv-stop-btn">Stop</button>
-                    <button class="btn btn--ghost pv-delete-btn" id="pv-delete-btn">Delete Project</button>
+
+                <!-- Right: Deployment Info -->
+                <div class="pv-deploy-info">
+                    <div class="pv-deploy-section">
+                        <div class="pv-deploy-label">Deployment</div>
+                        <div class="pv-deploy-value" id="pv-deployment-url">-</div>
+                    </div>
+
+                    <div class="pv-deploy-section">
+                        <div class="pv-deploy-label">Domain</div>
+                        <a class="pv-deploy-link" id="pv-domain-link" href="#" target="_blank">-</a>
+                    </div>
+
+                    <div class="pv-deploy-row">
+                        <div class="pv-deploy-section pv-deploy-half">
+                            <div class="pv-deploy-label">Status</div>
+                            <div class="pv-status-badge" id="pv-status-badge">
+                                <span class="pv-status-dot" id="pv-status-dot"></span>
+                                <span id="pv-status-text">-</span>
+                            </div>
+                        </div>
+                        <div class="pv-deploy-section pv-deploy-half">
+                            <div class="pv-deploy-label">Framework</div>
+                            <div class="pv-deploy-value pv-framework-tag" id="pv-framework">-</div>
+                        </div>
+                    </div>
+
+                    <div class="pv-deploy-section">
+                        <div class="pv-deploy-label">Source</div>
+                        <div class="pv-source-info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <line x1="6" y1="3" x2="6" y2="15"></line>
+                                <circle cx="18" cy="6" r="3"></circle>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <path d="M18 9a9 9 0 0 1-9 9"></path>
+                            </svg>
+                            <span id="pv-branch">main</span>
+                        </div>
+                        <div class="pv-commit-info" id="pv-commit-info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14">
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <line x1="1.05" y1="12" x2="7" y2="12"></line>
+                                <line x1="17.01" y1="12" x2="22.96" y2="12"></line>
+                            </svg>
+                            <span id="pv-commit-hash">-</span>
+                            <span class="pv-commit-msg" id="pv-commit-msg">-</span>
+                        </div>
+                    </div>
+
+                    <div class="pv-actions-new">
+                        <button class="btn btn--primary" id="pv-deploy-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Deploy
+                        </button>
+                        <button class="btn btn--ghost" id="pv-stop-btn">Stop</button>
+                        <button class="btn btn--ghost pv-delete-btn" id="pv-delete-btn">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -870,16 +931,54 @@
             currentFilePath = null;
             hasUnsavedChanges = false;
 
-            // Populate data
-            document.getElementById('pv-title').textContent = project.name;
-            document.getElementById('pv-status').textContent = project.status;
-            document.getElementById('pv-framework').textContent = project.framework || 'Unknown';
-            document.getElementById('pv-domain').textContent = `${project.name}.clickdep.dev`;
+            const subdomain = `${project.name}.clickdep.dev`;
+            const fullUrl = `https://${subdomain}`;
 
-            const url = `${project.name}.clickdep.dev`;
-            document.getElementById('pv-url').textContent = url;
-            document.getElementById('pv-url').href = `https://${url}`;
-            document.getElementById('pv-visit').href = `https://${url}`;
+            // Header
+            document.getElementById('pv-title').textContent = project.name;
+            document.getElementById('pv-visit').href = fullUrl;
+
+            // Preview iframe
+            document.getElementById('pv-preview-url').textContent = subdomain;
+            document.getElementById('pv-preview-open').href = fullUrl;
+            if (project.status === 'running') {
+                document.getElementById('pv-preview-iframe').src = fullUrl;
+            } else {
+                document.getElementById('pv-preview-iframe').src = 'about:blank';
+            }
+
+            // Deployment info
+            document.getElementById('pv-deployment-url').textContent = subdomain;
+            document.getElementById('pv-domain-link').textContent = subdomain;
+            document.getElementById('pv-domain-link').href = fullUrl;
+
+            // Status
+            document.getElementById('pv-status-text').textContent = project.status || 'stopped';
+            const statusDot = document.getElementById('pv-status-dot');
+            statusDot.className = 'pv-status-dot ' + (project.status || 'stopped');
+
+            // Framework
+            document.getElementById('pv-framework').textContent = project.framework || 'Unknown';
+
+            // Source (branch & commit)
+            document.getElementById('pv-branch').textContent = project.branch || 'main';
+            const commitHash = project.last_commit ? project.last_commit.substring(0, 7) : '-';
+            document.getElementById('pv-commit-hash').textContent = commitHash;
+
+            // Fetch latest deployment for commit message
+            try {
+                const deploymentsRes = await fetch(`${API}/projects/${project.id}/deployments`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                const deployments = await deploymentsRes.json();
+                if (deployments.length > 0 && deployments[0].commit_message) {
+                    document.getElementById('pv-commit-msg').textContent = deployments[0].commit_message;
+                } else {
+                    document.getElementById('pv-commit-msg').textContent = 'No commit info';
+                }
+            } catch (e) {
+                document.getElementById('pv-commit-msg').textContent = '-';
+            }
 
             // Show project view
             document.getElementById('project-view').classList.remove('hidden');
