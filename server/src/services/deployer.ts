@@ -79,8 +79,10 @@ export async function deleteProject(id: string): Promise<void> {
 
 /**
  * Deploy a project (build and start)
+ * @param id - Project ID
+ * @param skipPull - If true, skip git pull (for manual deploys to preserve local edits)
  */
-export async function deployProject(id: string): Promise<Deployment> {
+export async function deployProject(id: string, skipPull: boolean = true): Promise<Deployment> {
     const project = getProject(id);
     if (!project) throw new Error('Project not found');
 
@@ -104,9 +106,15 @@ export async function deployProject(id: string): Promise<Deployment> {
 
         let commitInfo = { latestCommit: 'local', commitMessage: 'Local deployment' };
 
-        if (isGitProject) {
-            // Pull latest for git projects
+        // Only pull from remote if:
+        // 1. It's a git-based project AND
+        // 2. skipPull is false (auto-deploy from polling)
+        if (isGitProject && !skipPull) {
+            // Pull latest for git projects (only for auto-deploys)
             commitInfo = await pullRepo(project.name);
+        } else if (isGitProject) {
+            // For manual deploys, just get current commit info without pulling
+            console.log(`[Deploy] Skipping git pull for ${project.name} (preserving local edits)`);
         }
 
         // Update deployment with commit info
@@ -214,7 +222,8 @@ export async function checkForUpdates(): Promise<string[]> {
             const hasNew = await hasNewCommits(project.name, project.last_commit);
             if (hasNew) {
                 console.log(`[Poller] New commits detected for ${project.name}, deploying...`);
-                await deployProject(project.id);
+                // skipPull = false: pull from remote for auto-deploys
+                await deployProject(project.id, false);
                 updated.push(project.name);
             }
         }
