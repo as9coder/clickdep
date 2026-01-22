@@ -148,6 +148,16 @@ app.post('/projects/upload', async (c) => {
         // Sanitize name
         const sanitizedName = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
+        if (!sanitizedName || sanitizedName.length < 1) {
+            return c.json({ error: 'Invalid project name' }, 400);
+        }
+
+        // Check if project name already exists (globally)
+        const existing = listProjects().find(p => p.name === sanitizedName);
+        if (existing) {
+            return c.json({ error: 'A project with this name already exists. Please choose a different name.' }, 400);
+        }
+
         // Handle files
         const files: { name: string; content: ArrayBuffer }[] = [];
 
@@ -214,7 +224,7 @@ app.post('/projects', async (c) => {
         // Check if project name already exists
         const existing = listProjects().find(p => p.name === sanitizedName);
         if (existing) {
-            return c.json({ error: 'A project with this name already exists' }, 400);
+            return c.json({ error: 'A project with this name already exists. Please choose a different name.' }, 400);
         }
 
         // Lock to prevent duplicate creates

@@ -256,8 +256,8 @@
                         <div class="pv-info-value" id="pv-framework">-</div>
                     </div>
                     <div class="pv-info-card glass">
-                        <div class="pv-info-label">Port</div>
-                        <div class="pv-info-value" id="pv-port">-</div>
+                        <div class="pv-info-label">Domain</div>
+                        <div class="pv-info-value" id="pv-domain">-</div>
                     </div>
                     <div class="pv-info-card glass">
                         <div class="pv-info-label">URL</div>
@@ -874,7 +874,7 @@
             document.getElementById('pv-title').textContent = project.name;
             document.getElementById('pv-status').textContent = project.status;
             document.getElementById('pv-framework').textContent = project.framework || 'Unknown';
-            document.getElementById('pv-port').textContent = project.port || '-';
+            document.getElementById('pv-domain').textContent = `${project.name}.clickdep.dev`;
 
             const url = `${project.name}.clickdep.dev`;
             document.getElementById('pv-url').textContent = url;
