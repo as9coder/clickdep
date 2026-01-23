@@ -382,17 +382,15 @@
                     </div>
 
                     <div class="pv-actions-new">
-                        <button class="btn btn--primary" id="pv-deploy-btn" onclick="deployProject(currentProject.id)">
+                        <button class="btn btn--primary" id="pv-deploy-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
                                 height="16">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
                             Deploy
                         </button>
-                        <button class="btn btn--ghost" id="pv-stop-btn"
-                            onclick="stopProject(currentProject.id)">Stop</button>
-                        <button class="btn btn--ghost pv-delete-btn" id="pv-delete-btn"
-                            onclick="deleteProject(currentProject.id)">Delete</button>
+                        <button class="btn btn--ghost" id="pv-stop-btn">Stop</button>
+                        <button class="btn btn--ghost pv-delete-btn" id="pv-delete-btn">Delete</button>
                     </div>
                 </div>
             </div>
@@ -1533,8 +1531,7 @@
         window.closeCreateModal = () => {
             createModal.classList.add('hidden');
             // Reset form
-            document.getElementById('create-form').reset();
-            document.getElementById('template-name').value = '';
+            // Legacy form removed, using deployConfig reset in openCreateModal
             droppedFiles = [];
         };
 
