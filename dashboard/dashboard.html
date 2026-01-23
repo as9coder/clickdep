@@ -944,7 +944,24 @@
 
         // Open project view
         window.openProjectView = async function (projectId) {
-            const project = projects.find(p => p.id === projectId);
+            // Fetch fresh project data from API instead of potentially stale local array
+            let project;
+            try {
+                const res = await fetch(`${API}/projects/${projectId}`, {
+                    headers: { 'X-User-Id': currentUser.uid }
+                });
+                if (res.ok) {
+                    project = await res.json();
+                    // Update local array with fresh data
+                    const idx = projects.findIndex(p => p.id === projectId);
+                    if (idx >= 0) projects[idx] = project;
+                } else {
+                    project = projects.find(p => p.id === projectId);
+                }
+            } catch (e) {
+                project = projects.find(p => p.id === projectId);
+            }
+
             if (!project) return;
 
             currentProject = project;
@@ -972,10 +989,11 @@
             document.getElementById('pv-domain-link').textContent = subdomain;
             document.getElementById('pv-domain-link').href = fullUrl;
 
-            // Status
-            document.getElementById('pv-status-text').textContent = project.status || 'stopped';
+            // Status - capitalize for display
+            const statusText = project.status || 'stopped';
+            document.getElementById('pv-status-text').textContent = statusText.charAt(0).toUpperCase() + statusText.slice(1);
             const statusDot = document.getElementById('pv-status-dot');
-            statusDot.className = 'pv-status-dot ' + (project.status || 'stopped');
+            statusDot.className = 'pv-status-dot ' + statusText;
 
             // Framework
             document.getElementById('pv-framework').textContent = project.framework || 'Unknown';
@@ -998,6 +1016,23 @@
                 }
             } catch (e) {
                 document.getElementById('pv-commit-msg').textContent = '-';
+            }
+
+            // Button states: disable Deploy when running, disable Stop when stopped
+            const isRunning = project.status === 'running';
+            const isStopped = project.status === 'stopped' || !project.status;
+            const isBuilding = project.status === 'building';
+
+            const deployBtn = document.getElementById('pv-deploy-btn');
+            const stopBtn = document.getElementById('pv-stop-btn');
+
+            deployBtn.disabled = isRunning || isBuilding;
+            stopBtn.disabled = isStopped || isBuilding;
+
+            if (isBuilding) {
+                deployBtn.textContent = 'Building...';
+            } else {
+                deployBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Deploy`;
             }
 
             // Show project view
