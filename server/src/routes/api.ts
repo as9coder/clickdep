@@ -52,7 +52,9 @@ app.get('/projects', async (c) => {
         projects.map(async (project) => {
             const processStatus = await getProcessStatus(project.name);
             let liveStatus = project.status;
-            if (processStatus === 'online') {
+            if (project.status === 'building') {
+                // Keep building status locally
+            } else if (processStatus === 'online') {
                 liveStatus = 'running';
             } else if (processStatus === 'stopped' || processStatus === 'not_found') {
                 liveStatus = 'stopped';
@@ -78,7 +80,9 @@ app.get('/projects/:id', async (c) => {
 
     // Map PM2 status to our status values and OVERRIDE database status with live status
     let liveStatus = project.status;
-    if (processStatus === 'online') {
+    if (project.status === 'building') {
+        // Keep building status locally
+    } else if (processStatus === 'online') {
         liveStatus = 'running';
     } else if (processStatus === 'stopped' || processStatus === 'not_found') {
         liveStatus = 'stopped';
