@@ -1298,6 +1298,19 @@ body::before {
     border-top: 1px solid var(--glass-border);
 }
 
+.pv-actions-new button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-secondary) !important;
+    border-color: transparent !important;
+}
+
+.pv-actions-new button:disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 .pv-actions-new .btn--primary {
     display: inline-flex;
     align-items: center;
