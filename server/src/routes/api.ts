@@ -520,17 +520,32 @@ app.get('/projects/:id/files/*', async (c) => {
         return c.json({ error: 'Invalid path' }, 403);
     }
 
-    if (!existsSync(fullPath)) {
-        return c.json({ error: 'File not found' }, 404);
+    // Check if it's a binary file (common binary extensions)
+    const binaryExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg',
+        '.woff', '.woff2', '.ttf', '.eot', '.otf',
+        '.pdf', '.zip', '.tar', '.gz', '.mp3', '.mp4', '.webm',
+        '.exe', '.dll', '.so', '.dylib'];
+    const ext = fullPath.substring(fullPath.lastIndexOf('.')).toLowerCase();
+    if (binaryExtensions.includes(ext)) {
+        return c.json({
+            content: `[Binary file: ${ext}]\n\nThis file type cannot be edited in the browser.`,
+            path: filePath,
+            isBinary: true
+        });
     }
 
     try {
         const content = readFileSync(fullPath, 'utf-8');
         c.header('Cache-Control', 'no-store, no-cache, must-revalidate');
         c.header('Pragma', 'no-cache');
-        return c.json({ content, path: filePath });
+        return c.json({ content, path: filePath, isBinary: false });
     } catch (e) {
-        return c.json({ error: 'Failed to read file' }, 500);
+        // If UTF-8 read fails, it might be a binary file
+        return c.json({
+            content: '[Unable to read file - may be binary or use unsupported encoding]',
+            path: filePath,
+            isBinary: true
+        });
     }
 });
 
