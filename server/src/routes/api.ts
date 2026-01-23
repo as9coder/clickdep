@@ -40,13 +40,30 @@ function releaseLock(projectId: string, operation: string): void {
 }
 
 // List all projects (filtered by user)
-app.get('/projects', (c) => {
+app.get('/projects', async (c) => {
     const userId = c.req.header('X-User-Id');
     if (!userId) {
         return c.json({ error: 'Unauthorized' }, 401);
     }
     const projects = listProjects().filter(p => p.user_id === userId);
-    return c.json(projects);
+
+    // Get live status for each project from PM2
+    const projectsWithLiveStatus = await Promise.all(
+        projects.map(async (project) => {
+            const processStatus = await getProcessStatus(project.name);
+            let liveStatus = project.status;
+            if (processStatus === 'online') {
+                liveStatus = 'running';
+            } else if (processStatus === 'stopped' || processStatus === 'not_found') {
+                liveStatus = 'stopped';
+            } else if (processStatus === 'error') {
+                liveStatus = 'error';
+            }
+            return { ...project, status: liveStatus };
+        })
+    );
+
+    return c.json(projectsWithLiveStatus);
 });
 
 // Get single project
@@ -56,10 +73,20 @@ app.get('/projects/:id', async (c) => {
         return c.json({ error: 'Project not found' }, 404);
     }
 
-    // Get live process status
+    // Get live process status from PM2
     const processStatus = await getProcessStatus(project.name);
 
-    return c.json({ ...project, processStatus });
+    // Map PM2 status to our status values and OVERRIDE database status with live status
+    let liveStatus = project.status;
+    if (processStatus === 'online') {
+        liveStatus = 'running';
+    } else if (processStatus === 'stopped' || processStatus === 'not_found') {
+        liveStatus = 'stopped';
+    } else if (processStatus === 'error') {
+        liveStatus = 'error';
+    }
+
+    return c.json({ ...project, status: liveStatus, processStatus });
 });
 
 // Get project stats
