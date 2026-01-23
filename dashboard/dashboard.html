@@ -461,6 +461,7 @@
     <div class="modal hidden" id="deploy-modal">
         <div class="modal__backdrop"></div>
         <div class="modal__content" style="max-width: 600px;">
+            <button class="modal__close" onclick="closeDeployModal()">&times;</button>
             <h2 class="modal__title" id="deploy-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     style="width: 28px; height: 28px; display: inline-block; vertical-align: middle; margin-right: 8px;">
@@ -1614,7 +1615,7 @@
                         document.getElementById('running-status').textContent = 'Running ✓';
 
                         // Show URL
-                        const url = `http://${window.location.hostname}:${project.port}`;
+                        const url = `https://${project.name}.clickdep.dev`;
                         document.getElementById('deploy-url').href = url;
                         document.getElementById('deploy-url').textContent = url;
                         document.getElementById('deploy-url-section').classList.remove('hidden');
@@ -1642,6 +1643,11 @@
                 }
             }, 2000); // Poll every 2 seconds
         }
+
+        window.closeDeployModal = () => {
+            document.getElementById('deploy-modal').classList.add('hidden');
+            if (deploymentInterval) clearInterval(deploymentInterval);
+        };
 
         // Refresh projects every 5 seconds
         setInterval(loadProjects, 5000);
