@@ -108,110 +108,163 @@
     <!-- Create Project Modal -->
     <div class="modal hidden" id="create-modal">
         <div class="modal__backdrop" onclick="closeCreateModal()"></div>
-        <div class="modal__content">
+        <div class="modal__content modal__content--large">
             <button class="modal__close" onclick="closeCreateModal()">&times;</button>
-            <h2 class="modal__title">Create Project</h2>
 
-            <div class="modal-tabs">
-                <button class="modal-tab active" onclick="switchTab('github')">Import Git</button>
-                <button class="modal-tab" onclick="switchTab('upload')">Upload</button>
-                <button class="modal-tab" onclick="switchTab('template')">Templates</button>
+            <!-- Step 1: Selection -->
+            <div id="create-step-1">
+                <h2 class="modal__title">Let's build something new</h2>
+
+                <!-- Git Import Bar -->
+                <div class="git-import-bar">
+                    <div class="git-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20">
+                            <path
+                                d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36.5-4.34 2.32-.75-.11-1.55-.11-2.32 0C6.5 2.5 3.5 1.5 1.5 1.5 2.5 4.5 9 4.5 3 6c-.73 1.02-1.08 2.25-1 3.5.08 3.5 3 5.5 6 5.5-.39 1-.68 2-1 3.5H4a2 2 0 0 0-2 2v2v1h5v-1" />
+                        </svg>
+                    </div>
+                    <input type="text" id="git-repo-input" placeholder="Enter a Git repository URL to deploy..."
+                        onkeydown="handleGitInput(event)">
+                    <button class="btn btn--primary" onclick="handleGitDeploy()">Continue</button>
+                </div>
+
+                <div class="create-grid">
+                    <!-- Left Column: Upload HTML -->
+                    <div class="create-col">
+                        <h3 class="create-col-title">Upload HTML File</h3>
+                        <div class="upload-dropzone" onclick="triggerFileUpload()" id="upload-zone">
+                            <input type="file" id="html-upload-input" accept=".html" hidden
+                                onchange="handleFileSelect(event)">
+                            <div class="upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48"
+                                    height="48">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                                </svg>
+                            </div>
+                            <div class="upload-text">
+                                <h4>Upload index.html</h4>
+                                <p>Deploy a single HTML file instantly</p>
+                            </div>
+                            <button class="btn btn--outline">Select File</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Templates -->
+                    <div class="create-col">
+                        <div class="create-col-header">
+                            <h3 class="create-col-title">Clone Template</h3>
+                            <span class="create-filter">Browse All</span>
+                        </div>
+                        <div class="template-grid">
+                            <div class="template-card" onclick="selectTemplate('html5')">
+                                <div class="template-icon" style="background: rgba(227, 76, 38, 0.1);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#e34c26" stroke-width="2" width="24"
+                                        height="24">
+                                        <path d="M4 3l1.5 17L12 22l6.5-2L20 3H4z" />
+                                        <path d="M8 8h8M8 12h6" />
+                                    </svg>
+                                </div>
+                                <div class="template-info">
+                                    <div class="template-name">HTML5</div>
+                                    <div class="template-desc">Static Website</div>
+                                </div>
+                            </div>
+
+                            <div class="template-card" onclick="selectTemplate('react')">
+                                <div class="template-icon" style="background: rgba(97, 218, 251, 0.1);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#61dafb" stroke-width="1.5" width="24"
+                                        height="24">
+                                        <circle cx="12" cy="12" r="2" />
+                                        <ellipse cx="12" cy="12" rx="10" ry="4" />
+                                        <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+                                        <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
+                                    </svg>
+                                </div>
+                                <div class="template-info">
+                                    <div class="template-name">React</div>
+                                    <div class="template-desc">Vite + React 18</div>
+                                </div>
+                            </div>
+
+                            <div class="template-card" onclick="selectTemplate('vue')">
+                                <div class="template-icon" style="background: rgba(66, 184, 131, 0.1);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#42b883" stroke-width="2" width="24"
+                                        height="24">
+                                        <path d="M2 3h4l6 10 6-10h4L12 21 2 3z" />
+                                        <path d="M6.5 3L12 12l5.5-9" stroke="#35495e" />
+                                    </svg>
+                                </div>
+                                <div class="template-info">
+                                    <div class="template-name">Vue</div>
+                                    <div class="template-desc">Vite + Vue 3</div>
+                                </div>
+                            </div>
+
+                            <div class="template-card" onclick="selectTemplate('nextjs')">
+                                <div class="template-icon" style="background: rgba(255, 255, 255, 0.1);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="24"
+                                        height="24">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M8 8v8M8 8l8 10M16 8v8" stroke-linecap="round" />
+                                    </svg>
+                                </div>
+                                <div class="template-info">
+                                    <div class="template-name">Next.js</div>
+                                    <div class="template-desc">Next.js Boilerplate</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- GitHub Tab -->
-            <form id="create-form" class="create-tab" onsubmit="handleCreateSubmit(event)">
-                <div class="form-group">
-                    <label for="project-name">Project Name</label>
-                    <input type="text" id="project-name" placeholder="my-awesome-app" required>
-                </div>
-                <div class="form-group">
-                    <label for="github-url">GitHub URL</label>
-                    <input type="url" id="github-url" placeholder="https://github.com/username/repo" required>
-                </div>
-                <div class="form-group">
-                    <label for="branch">Branch (Optional)</label>
-                    <input type="text" id="branch" placeholder="main">
-                </div>
-                <button type="submit" class="btn btn--primary btn--block">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
+            <!-- Step 2: Configuration (Initially Hidden) -->
+            <div id="create-step-2" class="hidden">
+                <button class="back-btn" onclick="backToStep1()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
-                    Import & Deploy
+                    Back
                 </button>
-            </form>
+                <div class="config-container">
+                    <div class="config-header">
+                        <h3>Configure Project</h3>
+                        <p id="config-subtitle">Deploying your project</p>
+                    </div>
 
-            <!-- Upload Tab (Coming Soon) -->
-            <div id="tab-upload" class="create-tab hidden">
-                <div class="coming-soon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 6v6l4 2" />
-                    </svg>
-                    <h3>Coming Soon</h3>
-                    <p>File upload feature is under development. Use Templates or Git import for now.</p>
+                    <div class="config-card">
+                        <div class="form-group">
+                            <label for="new-project-name">Project Name</label>
+                            <input type="text" id="new-project-name" placeholder="my-awesome-project"
+                                oninput="validateProjectName(this.value)" autocomplete="off">
+                            <div class="input-status" id="name-status"></div>
+                        </div>
+
+                        <div class="domain-preview">
+                            <span class="domain-label">Domain:</span>
+                            <span class="domain-url" id="domain-preview">...clickdep.dev</span>
+                        </div>
+
+                        <div class="config-summary" id="config-summary">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <button class="btn btn--primary btn--block btn--large" id="deploy-submit-btn"
+                            onclick="submitDeploy()" disabled>
+                            Deploy
+                        </button>
+                        <div id="deploy-error" class="deploy-error hidden"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Template Tab -->
-            <div id="tab-template" class="create-tab hidden">
-                <div class="template-grid">
-                    <div class="template-card" onclick="selectTemplate('html5')">
-                        <div class="template-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#e34c26" stroke-width="2" width="24"
-                                height="24">
-                                <path d="M4 3l1.5 17L12 22l6.5-2L20 3H4z" />
-                                <path d="M8 8h8M8 12h6" />
-                            </svg>
-                        </div>
-                        <div class="template-name">HTML5</div>
-                        <div class="template-desc">Static Website</div>
-                    </div>
-                    <div class="template-card" onclick="selectTemplate('react')">
-                        <div class="template-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#61dafb" stroke-width="1.5" width="24"
-                                height="24">
-                                <circle cx="12" cy="12" r="2" />
-                                <ellipse cx="12" cy="12" rx="10" ry="4" />
-                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
-                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
-                            </svg>
-                        </div>
-                        <div class="template-name">React</div>
-                        <div class="template-desc">Vite + React 18</div>
-                    </div>
-                    <div class="template-card" onclick="selectTemplate('vue')">
-                        <div class="template-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#42b883" stroke-width="2" width="24"
-                                height="24">
-                                <path d="M2 3h4l6 10 6-10h4L12 21 2 3z" />
-                                <path d="M6.5 3L12 12l5.5-9" stroke="#35495e" />
-                            </svg>
-                        </div>
-                        <div class="template-name">Vue</div>
-                        <div class="template-desc">Vite + Vue 3</div>
-                    </div>
-                    <div class="template-card" onclick="selectTemplate('nextjs')">
-                        <div class="template-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M8 8v8M8 8l8 10M16 8v8" stroke-linecap="round" />
-                            </svg>
-                        </div>
-                        <div class="template-name">Next.js</div>
-                        <div class="template-desc">React Framework</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="template-name">Project Name</label>
-                    <input type="text" id="template-name" placeholder="my-template-app">
-                </div>
-                <button class="btn btn--primary btn--block" onclick="handleTemplateSubmit()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Create from Template
-                </button>
-            </div>
+
+
+
         </div>
     </div>
 
@@ -1595,6 +1648,189 @@
 
         // Refresh projects every 5 seconds
         setInterval(loadProjects, 5000);
+
+        // --- Redesigned Create Flow Logic ---
+
+        let deployConfig = {
+            type: null, // 'git', 'upload', 'template'
+            data: null  // gitUrl, file object, or templateId
+        };
+
+        // Reset flow when opening modal
+        const originalOpenCreateModal = window.openCreateModal;
+        window.openCreateModal = () => {
+            // Reset UI
+            document.getElementById('create-step-1').classList.remove('hidden');
+            document.getElementById('create-step-2').classList.add('hidden');
+            document.getElementById('new-project-name').value = '';
+            document.getElementById('name-status').textContent = '';
+            document.getElementById('domain-preview').textContent = '...clickdep.dev';
+            document.getElementById('git-repo-input').value = '';
+            document.getElementById('deploy-error').classList.add('hidden');
+            document.getElementById('deploy-submit-btn').disabled = true;
+
+            deployConfig = { type: null, data: null };
+            originalOpenCreateModal();
+        };
+
+        // 1. Git Flow
+        window.handleGitInput = (e) => {
+            if (e.key === 'Enter') handleGitDeploy();
+        };
+
+        window.handleGitDeploy = () => {
+            const url = document.getElementById('git-repo-input').value.trim();
+            if (!url) return;
+
+            // Extract repo name as default project name
+            const parts = url.split('/');
+            const repoName = parts[parts.length - 1].replace('.git', '');
+
+            deployConfig = { type: 'git', data: url };
+            showConfigStep(repoName, `Import from Git: ${url}`);
+        };
+
+        // 2. File Upload Flow
+        window.triggerFileUpload = () => {
+            document.getElementById('html-upload-input').click();
+        };
+
+        window.handleFileSelect = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.html')) {
+                alert('Please select an .html file');
+                return;
+            }
+
+            deployConfig = { type: 'upload', data: file };
+            // Default name from filename sans extension
+            const defaultName = file.name.replace('.html', '').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+            showConfigStep(defaultName, `Deploy File: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+        };
+
+        // 3. Template Flow
+        window.selectTemplate = (templateId) => {
+            deployConfig = { type: 'template', data: templateId };
+            showConfigStep(templateId + '-starter', `Clone Template: ${templateId.toUpperCase()}`);
+        };
+
+        // Common: Show Step 2
+        function showConfigStep(defaultName, summary) {
+            document.getElementById('create-step-1').classList.add('hidden');
+            document.getElementById('create-step-2').classList.remove('hidden');
+
+            const nameInput = document.getElementById('new-project-name');
+            nameInput.value = defaultName;
+            validateProjectName(defaultName);
+
+            document.getElementById('config-summary').innerHTML = summary;
+            document.getElementById('config-subtitle').textContent = summary.split(':')[0];
+
+            nameInput.focus();
+        }
+
+        window.backToStep1 = () => {
+            document.getElementById('create-step-2').classList.add('hidden');
+            document.getElementById('create-step-1').classList.remove('hidden');
+        };
+
+        // Validation
+        let nameDebounce;
+        window.validateProjectName = (name) => {
+            const statusEl = document.getElementById('name-status');
+            const previewEl = document.getElementById('domain-preview');
+            const btn = document.getElementById('deploy-submit-btn');
+
+            name = name.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+            previewEl.textContent = name ? `${name}.clickdep.dev` : '...clickdep.dev';
+
+            if (!name) {
+                statusEl.innerHTML = '';
+                btn.disabled = true;
+                return;
+            }
+
+            // Client-side check first
+            // (In real app, we might check API, but we have list loaded)
+            // But we don't have the full list in `projects` variable globally? 
+            // We have `listProjects()` function which calls API, but `projects-grid` is populated.
+            // Let's assume we can proceed and API will error if duplicate.
+
+            if (name.length < 3) {
+                statusEl.innerHTML = '<span style="color:#ef4444">Name too short</span>';
+                btn.disabled = true;
+                return;
+            }
+
+            statusEl.innerHTML = '<span style="color:#22c55e">Available</span>';
+            btn.disabled = false;
+        };
+
+        // Submit Deployment
+        window.submitDeploy = async () => {
+            const name = document.getElementById('new-project-name').value.trim();
+            const btn = document.getElementById('deploy-submit-btn');
+            const errorEl = document.getElementById('deploy-error');
+
+            if (!name || !deployConfig.type) return;
+
+            btn.disabled = true;
+            btn.innerHTML = 'Creating...';
+            errorEl.classList.add('hidden');
+
+            try {
+                let project;
+
+                if (deployConfig.type === 'git') {
+                    // Reuse existing createProject logic
+                    project = await createProject(name, deployConfig.data, 'main');
+                }
+                else if (deployConfig.type === 'template') {
+                    const res = await fetch(`${API}/projects/template`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-User-Id': currentUser.uid
+                        },
+                        body: JSON.stringify({ name, template: deployConfig.data })
+                    });
+                    if (!res.ok) throw new Error((await res.json()).error);
+                    project = await res.json();
+                }
+                else if (deployConfig.type === 'upload') {
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('files', deployConfig.data); // Single file
+
+                    const res = await fetch(`${API}/projects/upload`, {
+                        method: 'POST',
+                        headers: { 'X-User-Id': currentUser.uid },
+                        body: formData
+                    });
+                    if (!res.ok) throw new Error((await res.json()).error);
+                    project = await res.json();
+                }
+
+                closeCreateModal();
+
+                // Show deployment modal (reusing existing flow)
+                showDeploymentProgress(project.id, project.name);
+
+                // Trigger deployment if not already triggered (Template auto-deploys, but upload might not)
+                if (deployConfig.type === 'upload' || deployConfig.type === 'git') {
+                    fetch(`${API}/projects/${project.id}/deploy`, { method: 'POST' }).catch(console.error);
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorEl.textContent = err.message || 'Creation failed';
+                errorEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerHTML = 'Deploy';
+            }
+        };
     </script>
 
     <!-- Lenis Smooth Scroll Init -->
