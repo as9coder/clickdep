@@ -1552,12 +1552,14 @@ body::before {
 }
 
 /* Redesigned Create Modal */
-.modal__content--large {
-    max-width: 900px;
-    width: 95%;
+/* Redesigned Create Modal */
+.modal__content.modal__content--large {
+    max-width: 900px !important;
+    width: 95% !important;
     min-height: 500px;
     display: flex;
     flex-direction: column;
+    padding: 32px !important;
 }
 
 .modal__title {
