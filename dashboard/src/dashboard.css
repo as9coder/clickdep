@@ -1115,6 +1115,46 @@ body::before {
     background: #1a1a2e;
 }
 
+.pv-preview-fallback {
+    position: absolute;
+    inset: 0;
+    top: 48px;
+    /* below toolbar */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: #1a1a2e;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 24px;
+}
+
+.pv-preview-fallback svg {
+    opacity: 0.4;
+}
+
+.pv-preview-fallback p {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.pv-preview-fallback span {
+    font-size: 13px;
+    max-width: 280px;
+}
+
+.pv-preview-fallback.hidden {
+    display: none;
+}
+
+.pv-preview-frame {
+    position: relative;
+}
+
 /* Deployment Info Panel */
 .pv-deploy-info {
     display: flex;

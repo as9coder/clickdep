@@ -265,6 +265,16 @@
                             </a>
                         </div>
                         <iframe id="pv-preview-iframe" class="pv-preview-iframe" src="about:blank"></iframe>
+                        <div id="pv-preview-fallback" class="pv-preview-fallback hidden">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="64"
+                                height="64">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                                <line x1="8" y1="21" x2="16" y2="21" />
+                                <line x1="12" y1="17" x2="12" y2="21" />
+                            </svg>
+                            <p>Preview unavailable</p>
+                            <span>This site blocks iframe embedding. Click the link above to open in a new tab.</span>
+                        </div>
                     </div>
                 </div>
 
@@ -975,13 +985,40 @@
             document.getElementById('pv-title').textContent = project.name;
             document.getElementById('pv-visit').href = fullUrl;
 
-            // Preview iframe
+            // Preview iframe with fallback detection
             document.getElementById('pv-preview-url').textContent = subdomain;
             document.getElementById('pv-preview-open').href = fullUrl;
+            const previewIframe = document.getElementById('pv-preview-iframe');
+            const previewFallback = document.getElementById('pv-preview-fallback');
+
+            // Reset fallback visibility
+            previewFallback.classList.add('hidden');
+
             if (project.status === 'running') {
-                document.getElementById('pv-preview-iframe').src = fullUrl;
+                previewIframe.src = fullUrl;
+                // Detect if iframe fails to load (X-Frame-Options blocking)
+                previewIframe.onload = function () {
+                    // Can't actually detect X-Frame-Options error from JS - use timeout fallback
+                };
+                previewIframe.onerror = function () {
+                    previewFallback.classList.remove('hidden');
+                };
+                // Also show fallback after a timeout since X-Frame-Options doesn't trigger onerror
+                setTimeout(() => {
+                    try {
+                        // Try to access iframe - will throw if blocked
+                        if (previewIframe.contentWindow && previewIframe.contentWindow.location.href === 'about:blank') {
+                            previewFallback.classList.remove('hidden');
+                        }
+                    } catch (e) {
+                        // Cross-origin - iframe loaded but we can't access it (this is expected for normal operation)
+                    }
+                }, 3000);
             } else {
-                document.getElementById('pv-preview-iframe').src = 'about:blank';
+                previewIframe.src = 'about:blank';
+                previewFallback.classList.remove('hidden');
+                previewFallback.querySelector('p').textContent = 'Site not running';
+                previewFallback.querySelector('span').textContent = 'Deploy this project to see a live preview.';
             }
 
             // Deployment info
