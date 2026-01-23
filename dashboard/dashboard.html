@@ -809,11 +809,21 @@
         window.deployProject = async function (id) {
             try {
                 const btn = event?.target;
+                const originalText = btn?.textContent || 'Deploy';
                 if (btn) { btn.disabled = true; btn.textContent = 'Deploying...'; }
 
                 await fetch(`${API}/projects/${id}/deploy`, { method: 'POST' });
                 await loadProjects();
+
+                // Refresh project view if currently open
+                if (currentProject && currentProject.id === id) {
+                    await openProjectView(id);
+                }
+
+                if (btn) { btn.disabled = false; btn.textContent = originalText; }
             } catch (err) {
+                const btn = event?.target;
+                if (btn) { btn.disabled = false; btn.textContent = 'Deploy'; }
                 alert('Deploy failed: ' + err.message);
             }
         };
@@ -822,11 +832,21 @@
         window.stopProject = async function (id) {
             try {
                 const btn = event?.target;
+                const originalText = btn?.textContent || 'Stop';
                 if (btn) { btn.disabled = true; btn.textContent = 'Stopping...'; }
 
                 await fetch(`${API}/projects/${id}/stop`, { method: 'POST' });
                 await loadProjects();
+
+                // Refresh project view if currently open
+                if (currentProject && currentProject.id === id) {
+                    await openProjectView(id);
+                }
+
+                if (btn) { btn.disabled = false; btn.textContent = originalText; }
             } catch (err) {
+                const btn = event?.target;
+                if (btn) { btn.disabled = false; btn.textContent = 'Stop'; }
                 alert('Stop failed: ' + err.message);
             }
         };
