@@ -30,13 +30,17 @@ async function checkDockerRunning() {
     }
 }
 
-async function buildImage(projectId, contextPath, dockerfilePath, tag, onLog) {
+async function buildImage(projectId, contextPath, dockerfilePath, tag, onLog, opts = {}) {
+    const { cpuLimit = 0.5, memoryLimit = 536870912 } = opts;
     const stream = await docker.buildImage(
         { context: contextPath, src: ['.'] },
         {
             t: tag,
             dockerfile: dockerfilePath || 'Dockerfile',
             nocache: false,
+            cpuquota: Math.round(cpuLimit * 100000),
+            cpuperiod: 100000,
+            memory: memoryLimit,
         }
     );
 

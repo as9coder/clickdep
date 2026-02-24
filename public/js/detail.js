@@ -1,20 +1,20 @@
 // ─── Project Detail View ─────────────────────
 Views.projectDetail = async function (container, projectId) {
-    let project, deployments = [], activeTab = 'overview', logLines = [], logPaused = false;
+  let project, deployments = [], activeTab = 'overview', logLines = [], logPaused = false;
 
-    const load = async () => {
-        project = await API.get(`/api/projects/${projectId}`);
-        deployments = await API.get(`/api/projects/${projectId}/deployments`);
-    };
+  const load = async () => {
+    project = await API.get(`/api/projects/${projectId}`);
+    deployments = await API.get(`/api/projects/${projectId}/deployments`);
+  };
 
-    const render = () => {
-        if (!project) { container.innerHTML = '<p>Loading...</p>'; return; }
-        const canStart = project.status === 'stopped' || project.status === 'error' || project.status === 'created';
-        const canStop = project.status === 'running';
-        const canRestart = project.status === 'running';
-        const isBuilding = project.status === 'building';
+  const render = () => {
+    if (!project) { container.innerHTML = '<p>Loading...</p>'; return; }
+    const canStart = project.status === 'stopped' || project.status === 'error' || project.status === 'created';
+    const canStop = project.status === 'running';
+    const canRestart = project.status === 'running';
+    const isBuilding = project.status === 'building';
 
-        container.innerHTML = `
+    container.innerHTML = `
       <div class="detail-header">
         <a href="#/" class="detail-back">←</a>
         <div>
@@ -32,40 +32,46 @@ Views.projectDetail = async function (container, projectId) {
       <div class="card-status status-${project.status}" style="display:inline-flex;margin-bottom:20px"><span class="status-dot"></span>${project.status}</div>
       <div class="detail-tabs">
         ${['overview', 'logs', 'deployments', 'settings', 'danger'].map(t =>
-            `<div class="detail-tab ${activeTab === t ? 'active' : ''}" data-tab="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</div>`
-        ).join('')}
+      `<div class="detail-tab ${activeTab === t ? 'active' : ''}" data-tab="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</div>`
+    ).join('')}
       </div>
       <div id="tab-content">${renderTab()}</div>`;
 
-        // Event bindings
-        container.querySelectorAll('.detail-tab').forEach(t => t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); }));
-        container.querySelector('#btn-start')?.addEventListener('click', () => doAction('start'));
-        container.querySelector('#btn-stop')?.addEventListener('click', () => doAction('stop'));
-        container.querySelector('#btn-restart')?.addEventListener('click', () => doAction('restart'));
-        container.querySelector('#btn-redeploy')?.addEventListener('click', () => doAction('redeploy'));
-        bindTabEvents();
-    };
+    // Event bindings
+    container.querySelectorAll('.detail-tab').forEach(t => t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); }));
+    container.querySelector('#btn-start')?.addEventListener('click', () => doAction('start'));
+    container.querySelector('#btn-stop')?.addEventListener('click', () => doAction('stop'));
+    container.querySelector('#btn-restart')?.addEventListener('click', () => doAction('restart'));
+    container.querySelector('#btn-redeploy')?.addEventListener('click', () => doAction('redeploy'));
+    bindTabEvents();
+  };
 
-    const doAction = async (action) => {
-        try {
-            await API.post(`/api/projects/${projectId}/${action}`);
-            App.toast(`${action} successful`, 'success');
-            await load(); render();
-        } catch (e) { App.toast(e.message, 'error'); }
-    };
+  const doAction = async (action) => {
+    const btn = container.querySelector(`#btn-${action}`);
+    const origText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = action.charAt(0).toUpperCase() + action.slice(1) + 'ing...'; btn.style.opacity = '0.6'; }
+    try {
+      await API.post(`/api/projects/${projectId}/${action}`);
+      App.toast(`${action} successful`, 'success');
+      await load(); render();
+    } catch (e) {
+      App.toast(e.message, 'error');
+      if (btn) { btn.disabled = false; btn.textContent = origText; btn.style.opacity = ''; }
+    }
+  };
 
-    const renderTab = () => {
-        if (activeTab === 'overview') return renderOverview();
-        if (activeTab === 'logs') return renderLogs();
-        if (activeTab === 'deployments') return renderDeployments();
-        if (activeTab === 'settings') return renderSettings();
-        if (activeTab === 'danger') return renderDanger();
-        return '';
-    };
+  const renderTab = () => {
+    if (activeTab === 'overview') return renderOverview();
+    if (activeTab === 'logs') return renderLogs();
+    if (activeTab === 'deployments') return renderDeployments();
+    if (activeTab === 'settings') return renderSettings();
+    if (activeTab === 'danger') return renderDanger();
+    return '';
+  };
 
-    const renderOverview = () => {
-        const envCount = Object.keys(project.env_vars || {}).length;
-        return `
+  const renderOverview = () => {
+    const envCount = Object.keys(project.env_vars || {}).length;
+    return `
       <div class="overview-grid">
         <div class="stat-card"><div class="stat-card-label">Status</div><div class="stat-card-value"><span class="card-status status-${project.status}"><span class="status-dot"></span>${project.status}</span></div></div>
         <div class="stat-card"><div class="stat-card-label">CPU Limit</div><div class="stat-card-value">${project.cpu_limit} cores</div><div class="stat-card-sub">${project.resource_preset} preset</div></div>
@@ -82,9 +88,9 @@ Views.projectDetail = async function (container, projectId) {
         <div class="stat-card-sub" style="margin-top:8px">Created ${timeAgo(project.created_at)} · Last deployed ${timeAgo(project.last_deployed_at)}</div>
       </div>
       ${project.notes ? `<div class="stat-card" style="margin-top:16px"><div class="stat-card-label">Notes</div><p style="margin-top:8px">${project.notes}</p></div>` : ''}`;
-    };
+  };
 
-    const renderLogs = () => `
+  const renderLogs = () => `
     <div class="log-viewer">
       <div class="log-toolbar">
         <input type="text" id="log-search" placeholder="Search logs...">
@@ -93,15 +99,15 @@ Views.projectDetail = async function (container, projectId) {
         <button class="btn btn-sm btn-ghost" id="log-clear">Clear</button>
       </div>
       <div class="log-body" id="log-body">${logLines.map(l => {
-        let cls = '';
-        if (l.includes('ERROR') || l.includes('error') || l.includes('❌')) cls = 'error';
-        else if (l.includes('WARN') || l.includes('warn') || l.includes('⚠')) cls = 'warn';
-        else if (l.includes('✔') || l.includes('✅')) cls = 'success';
-        return `<div class="log-line ${cls}">${escapeHtml(l)}</div>`;
-    }).join('') || '<div class="log-line text-muted">Waiting for logs...</div>'}</div>
+    let cls = '';
+    if (l.includes('ERROR') || l.includes('error') || l.includes('❌')) cls = 'error';
+    else if (l.includes('WARN') || l.includes('warn') || l.includes('⚠')) cls = 'warn';
+    else if (l.includes('✔') || l.includes('✅')) cls = 'success';
+    return `<div class="log-line ${cls}">${escapeHtml(l)}</div>`;
+  }).join('') || '<div class="log-line text-muted">Waiting for logs...</div>'}</div>
     </div>`;
 
-    const renderDeployments = () => `
+  const renderDeployments = () => `
     <table class="deploy-table">
       <thead><tr><th>Status</th><th>Branch</th><th>Triggered By</th><th>Duration</th><th>Time</th><th>Actions</th></tr></thead>
       <tbody>${deployments.map(d => `
@@ -115,9 +121,9 @@ Views.projectDetail = async function (container, projectId) {
         </tr>`).join('') || '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:30px">No deployments yet</td></tr>'}</tbody>
     </table>`;
 
-    const renderSettings = () => {
-        const envEntries = Object.entries(project.env_vars || {});
-        return `
+  const renderSettings = () => {
+    const envEntries = Object.entries(project.env_vars || {});
+    return `
       <div class="settings-section">
         <h3>Build Configuration</h3><p>Override auto-detected commands</p>
         <div class="form-row">
@@ -149,9 +155,9 @@ Views.projectDetail = async function (container, projectId) {
         <textarea id="set-notes" rows="3" style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius);font-family:inherit;outline:none">${project.notes || ''}</textarea>
         <button class="btn btn-ghost btn-sm mt-2" id="save-notes">Save Notes</button>
       </div>`;
-    };
+  };
 
-    const renderDanger = () => `
+  const renderDanger = () => `
     <div class="danger-zone">
       <h4>⚠️ Danger Zone</h4>
       <p>These actions are destructive and cannot be undone.</p>
@@ -164,119 +170,119 @@ Views.projectDetail = async function (container, projectId) {
       </div>
     </div>`;
 
-    const bindTabEvents = () => {
-        // Logs
-        container.querySelector('#log-pause')?.addEventListener('click', () => { logPaused = !logPaused; render(); });
-        container.querySelector('#log-clear')?.addEventListener('click', () => { logLines = []; render(); });
-        container.querySelector('#log-download')?.addEventListener('click', () => {
-            const blob = new Blob([logLines.join('\n')], { type: 'text/plain' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = `${project.name}-logs.txt`; a.click();
-        });
-        container.querySelector('#log-search')?.addEventListener('input', (e) => {
-            const q = e.target.value.toLowerCase();
-            container.querySelectorAll('.log-line').forEach(l => { l.style.display = !q || l.textContent.toLowerCase().includes(q) ? '' : 'none'; });
-        });
+  const bindTabEvents = () => {
+    // Logs
+    container.querySelector('#log-pause')?.addEventListener('click', () => { logPaused = !logPaused; render(); });
+    container.querySelector('#log-clear')?.addEventListener('click', () => { logLines = []; render(); });
+    container.querySelector('#log-download')?.addEventListener('click', () => {
+      const blob = new Blob([logLines.join('\n')], { type: 'text/plain' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${project.name}-logs.txt`; a.click();
+    });
+    container.querySelector('#log-search')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      container.querySelectorAll('.log-line').forEach(l => { l.style.display = !q || l.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+    });
 
-        // Rollback
-        container.querySelectorAll('.rollback-btn').forEach(b => b.addEventListener('click', async () => {
-            if (!confirm('Rollback to this deployment?')) return;
-            try { await API.post(`/api/projects/${projectId}/rollback/${b.dataset.deployId}`); App.toast('Rolled back', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
-        }));
+    // Rollback
+    container.querySelectorAll('.rollback-btn').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Rollback to this deployment?')) return;
+      try { await API.post(`/api/projects/${projectId}/rollback/${b.dataset.deployId}`); App.toast('Rolled back', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
+    }));
 
-        // Settings save
-        container.querySelector('#save-settings')?.addEventListener('click', async () => {
-            try {
-                await API.put(`/api/projects/${projectId}`, {
-                    build_command: container.querySelector('#set-build').value,
-                    start_command: container.querySelector('#set-start').value,
-                    install_command: container.querySelector('#set-install').value,
-                    node_version: container.querySelector('#set-node').value,
-                    notes: project.notes,
-                });
-                App.toast('Settings saved', 'success'); await load(); render();
-            } catch (e) { App.toast(e.message, 'error'); }
+    // Settings save
+    container.querySelector('#save-settings')?.addEventListener('click', async () => {
+      try {
+        await API.put(`/api/projects/${projectId}`, {
+          build_command: container.querySelector('#set-build').value,
+          start_command: container.querySelector('#set-start').value,
+          install_command: container.querySelector('#set-install').value,
+          node_version: container.querySelector('#set-node').value,
+          notes: project.notes,
         });
+        App.toast('Settings saved', 'success'); await load(); render();
+      } catch (e) { App.toast(e.message, 'error'); }
+    });
 
-        // Env vars
-        container.querySelector('#save-env')?.addEventListener('click', async () => {
-            const env = {};
-            container.querySelectorAll('[data-env-key]').forEach((el, i) => {
-                const k = el.value.trim();
-                const v = container.querySelector(`[data-env-val="${el.dataset.envKey}"]`)?.value || '';
-                if (k && el.dataset.envKey !== 'new') env[k] = v;
-                else if (k && el.dataset.envKey === 'new') env[k] = v;
-            });
-            try { await API.put(`/api/projects/${projectId}/env`, env); App.toast('Env vars saved', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
-        });
+    // Env vars
+    container.querySelector('#save-env')?.addEventListener('click', async () => {
+      const env = {};
+      container.querySelectorAll('[data-env-key]').forEach((el, i) => {
+        const k = el.value.trim();
+        const v = container.querySelector(`[data-env-val="${el.dataset.envKey}"]`)?.value || '';
+        if (k && el.dataset.envKey !== 'new') env[k] = v;
+        else if (k && el.dataset.envKey === 'new') env[k] = v;
+      });
+      try { await API.put(`/api/projects/${projectId}/env`, env); App.toast('Env vars saved', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
+    });
 
-        // Resources
-        let selPreset = project.resource_preset;
-        container.querySelectorAll('[data-rp]').forEach(c => c.addEventListener('click', () => { selPreset = c.dataset.rp; container.querySelectorAll('[data-rp]').forEach(x => x.classList.remove('active')); c.classList.add('active'); }));
-        container.querySelector('#save-resources')?.addEventListener('click', async () => {
-            const card = container.querySelector(`[data-rp="${selPreset}"]`);
-            if (!card) return;
-            try { await API.put(`/api/projects/${projectId}/resources`, { cpuLimit: parseFloat(card.dataset.cpu), memoryLimit: parseInt(card.dataset.mem), preset: selPreset }); App.toast('Resources updated', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
-        });
+    // Resources
+    let selPreset = project.resource_preset;
+    container.querySelectorAll('[data-rp]').forEach(c => c.addEventListener('click', () => { selPreset = c.dataset.rp; container.querySelectorAll('[data-rp]').forEach(x => x.classList.remove('active')); c.classList.add('active'); }));
+    container.querySelector('#save-resources')?.addEventListener('click', async () => {
+      const card = container.querySelector(`[data-rp="${selPreset}"]`);
+      if (!card) return;
+      try { await API.put(`/api/projects/${projectId}/resources`, { cpuLimit: parseFloat(card.dataset.cpu), memoryLimit: parseInt(card.dataset.mem), preset: selPreset }); App.toast('Resources updated', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
+    });
 
-        // Notes
-        container.querySelector('#save-notes')?.addEventListener('click', async () => {
-            try { await API.put(`/api/projects/${projectId}`, { notes: container.querySelector('#set-notes').value }); App.toast('Notes saved', 'success'); } catch (e) { App.toast(e.message, 'error'); }
-        });
+    // Notes
+    container.querySelector('#save-notes')?.addEventListener('click', async () => {
+      try { await API.put(`/api/projects/${projectId}`, { notes: container.querySelector('#set-notes').value }); App.toast('Notes saved', 'success'); } catch (e) { App.toast(e.message, 'error'); }
+    });
 
-        // Danger
-        container.querySelector('#btn-delete')?.addEventListener('click', async () => {
-            if (!confirm(`Delete "${project.name}" permanently?`)) return;
-            try { await API.del(`/api/projects/${projectId}`); App.toast('Deleted', 'success'); location.hash = '#/'; } catch (e) { App.toast(e.message, 'error'); }
-        });
-        container.querySelector('#btn-archive')?.addEventListener('click', async () => {
-            try { await API.post(`/api/projects/${projectId}/archive`); App.toast('Done', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
-        });
-        container.querySelector('#btn-backup')?.addEventListener('click', async () => {
-            try { await API.post(`/api/projects/${projectId}/backup`); App.toast('Backup created', 'success'); } catch (e) { App.toast(e.message, 'error'); }
-        });
-        container.querySelector('#btn-clone')?.addEventListener('click', async () => {
-            try { const r = await API.post(`/api/projects/${projectId}/clone`); App.toast(`Cloned as ${r.name}`, 'success'); location.hash = `#/project/${r.id}`; } catch (e) { App.toast(e.message, 'error'); }
-        });
-        container.querySelector('#btn-maintenance')?.addEventListener('click', async () => {
-            try { await API.put(`/api/projects/${projectId}/maintenance`, { enabled: !project.maintenance_mode }); App.toast('Done', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
-        });
-    };
+    // Danger
+    container.querySelector('#btn-delete')?.addEventListener('click', async () => {
+      if (!confirm(`Delete "${project.name}" permanently?`)) return;
+      try { await API.del(`/api/projects/${projectId}`); App.toast('Deleted', 'success'); location.hash = '#/'; } catch (e) { App.toast(e.message, 'error'); }
+    });
+    container.querySelector('#btn-archive')?.addEventListener('click', async () => {
+      try { await API.post(`/api/projects/${projectId}/archive`); App.toast('Done', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
+    });
+    container.querySelector('#btn-backup')?.addEventListener('click', async () => {
+      try { await API.post(`/api/projects/${projectId}/backup`); App.toast('Backup created', 'success'); } catch (e) { App.toast(e.message, 'error'); }
+    });
+    container.querySelector('#btn-clone')?.addEventListener('click', async () => {
+      try { const r = await API.post(`/api/projects/${projectId}/clone`); App.toast(`Cloned as ${r.name}`, 'success'); location.hash = `#/project/${r.id}`; } catch (e) { App.toast(e.message, 'error'); }
+    });
+    container.querySelector('#btn-maintenance')?.addEventListener('click', async () => {
+      try { await API.put(`/api/projects/${projectId}/maintenance`, { enabled: !project.maintenance_mode }); App.toast('Done', 'success'); await load(); render(); } catch (e) { App.toast(e.message, 'error'); }
+    });
+  };
 
-    try { await load(); } catch (e) { container.innerHTML = `<p>Error: ${e.message}</p>`; return; }
-    render();
+  try { await load(); } catch (e) { container.innerHTML = `<p>Error: ${e.message}</p>`; return; }
+  render();
 
-    // Subscribe to logs
-    WS.send({ type: 'subscribe_logs', projectId });
-    const logHandler = (data) => {
-        if (data.projectId !== projectId) return;
-        if (data.type === 'log_history') {
-            logLines = (data.logs || '').split('\n').filter(Boolean);
-            if (activeTab === 'logs') render();
-        } else if (data.type === 'log' && !logPaused) {
-            logLines.push(data.message);
-            if (logLines.length > 1000) logLines = logLines.slice(-500);
-            const body = container.querySelector('#log-body');
-            if (body && activeTab === 'logs') {
-                const cls = data.message.includes('ERROR') || data.message.includes('❌') ? 'error' : data.message.includes('✔') || data.message.includes('✅') ? 'success' : '';
-                body.innerHTML += `<div class="log-line ${cls}">${escapeHtml(data.message)}</div>`;
-                body.scrollTop = body.scrollHeight;
-            }
-        }
-    };
-    const statusHandler = (data) => {
-        if (data.projectId === projectId) { project.status = data.status; render(); }
-    };
-    WS.on('log', logHandler);
-    WS.on('log_history', logHandler);
-    WS.on('status', statusHandler);
+  // Subscribe to logs
+  WS.send({ type: 'subscribe_logs', projectId });
+  const logHandler = (data) => {
+    if (data.projectId !== projectId) return;
+    if (data.type === 'log_history') {
+      logLines = (data.logs || '').split('\n').filter(Boolean);
+      if (activeTab === 'logs') render();
+    } else if (data.type === 'log' && !logPaused) {
+      logLines.push(data.message);
+      if (logLines.length > 1000) logLines = logLines.slice(-500);
+      const body = container.querySelector('#log-body');
+      if (body && activeTab === 'logs') {
+        const cls = data.message.includes('ERROR') || data.message.includes('❌') ? 'error' : data.message.includes('✔') || data.message.includes('✅') ? 'success' : '';
+        body.innerHTML += `<div class="log-line ${cls}">${escapeHtml(data.message)}</div>`;
+        body.scrollTop = body.scrollHeight;
+      }
+    }
+  };
+  const statusHandler = (data) => {
+    if (data.projectId === projectId) { project.status = data.status; render(); }
+  };
+  WS.on('log', logHandler);
+  WS.on('log_history', logHandler);
+  WS.on('status', statusHandler);
 
-    return () => {
-        WS.send({ type: 'unsubscribe_logs' });
-        WS.off('log', logHandler); WS.off('log_history', logHandler); WS.off('status', statusHandler);
-    };
+  return () => {
+    WS.send({ type: 'unsubscribe_logs' });
+    WS.off('log', logHandler); WS.off('log_history', logHandler); WS.off('status', statusHandler);
+  };
 };
 
 function escapeHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

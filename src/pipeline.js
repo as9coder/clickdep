@@ -131,9 +131,11 @@ async function deploy(projectId, opts = {}) {
         // Step 5: Build Docker image
         log('▸ Step 5/6: Building Docker image...');
         const imageTag = `clickdep/${project.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}:latest`;
+        const buildCpu = (project.cpu_limit || 0.25) * 2;
+        const buildMem = (project.memory_limit || 268435456) * 2;
         const imageId = await dockerMgr.buildImage(projectId, workDir, 'Dockerfile', imageTag, (line) => {
             log(`  ${line}`);
-        });
+        }, { cpuLimit: buildCpu, memoryLimit: buildMem });
         log(`  ✔ Image built: ${imageTag}`);
 
         // Step 6: Create and start container
