@@ -128,6 +128,7 @@ const stmts = {
   // Projects
   getAllProjects: db.prepare(`SELECT * FROM projects ORDER BY is_favorite DESC, is_pinned DESC, updated_at DESC`),
   getProject: db.prepare(`SELECT * FROM projects WHERE id = ?`),
+  getProjectByName: db.prepare(`SELECT * FROM projects WHERE LOWER(name) = LOWER(?)`),
   insertProject: db.prepare(`INSERT INTO projects (id, name, source_type, source_url, branch, root_directory, framework, status, port, env_vars, cpu_limit, memory_limit, resource_preset, tags, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
   updateProject: db.prepare(`UPDATE projects SET name=?, source_url=?, branch=?, root_directory=?, build_command=?, start_command=?, install_command=?, output_dir=?, internal_port=?, node_version=?, restart_policy=?, auto_deploy=?, build_cache=?, notes=?, updated_at=datetime('now') WHERE id=?`),
   updateProjectStatus: db.prepare(`UPDATE projects SET status=?, updated_at=datetime('now') WHERE id=?`),

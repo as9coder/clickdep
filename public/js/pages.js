@@ -122,6 +122,8 @@ Views.settings = async function (container) {
   try { const r = await API.get('/api/auth/github/user'); if (r.connected) ghUser = r.user; } catch (e) { }
   let ghConfig = {};
   try { ghConfig = await API.get('/api/auth/github/config'); } catch (e) { }
+  let baseDomain = '';
+  try { const d = await API.get('/api/auth/domain'); baseDomain = d.domain || ''; } catch (e) { }
 
   container.innerHTML = `
     <div class="page-header"><h1>Settings</h1></div>
@@ -175,6 +177,26 @@ Views.settings = async function (container) {
           </div>
         `}
       `}
+    </div>
+
+    <!-- Domain Settings -->
+    <div class="settings-section" style="margin-top:16px">
+      <h3>🌐 Custom Domain</h3>
+      <p>Set your base domain so deployed projects are accessible at <strong>projectname.yourdomain.com</strong></p>
+      ${baseDomain ? `
+        <div style="padding:12px 16px;background:var(--accent-soft);border-radius:var(--radius);margin-bottom:12px">
+          <div class="text-sm text-muted">Current domain</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;margin-top:4px">${baseDomain}</div>
+          <div class="text-sm text-muted" style="margin-top:8px">Projects accessible at: <strong>projectname.${baseDomain}</strong></div>
+        </div>
+      ` : ''}
+      <div style="display:flex;gap:8px;max-width:400px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0"><label>Base Domain</label><input type="text" id="base-domain" placeholder="clickdep.dev" value="${baseDomain}"></div>
+        <button class="btn btn-primary btn-sm" id="save-domain" style="height:42px">Save</button>
+      </div>
+      <div class="text-xs text-muted" style="margin-top:8px">
+        Requires: Cloudflare Tunnel running + wildcard DNS (*.yourdomain.com → tunnel)
+      </div>
     </div>
 
     <div class="settings-section" style="margin-top:16px">
@@ -271,6 +293,16 @@ Views.settings = async function (container) {
       App.toast('Checking all repos for updates...', 'info');
       await API.post('/api/auth/github/check-updates');
       App.toast('Update check complete', 'success');
+    } catch (e) { App.toast(e.message, 'error'); }
+  });
+
+  // Domain
+  container.querySelector('#save-domain')?.addEventListener('click', async () => {
+    const domain = container.querySelector('#base-domain').value.trim();
+    try {
+      await API.post('/api/auth/domain', { domain });
+      App.toast(domain ? `Domain set to ${domain}` : 'Domain cleared', 'success');
+      Views.settings(container);
     } catch (e) { App.toast(e.message, 'error'); }
   });
 

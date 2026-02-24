@@ -273,5 +273,18 @@ router.post('/github/check-updates', async (req, res) => {
     }
 });
 
+
+// ─── DOMAIN SETTINGS ────────────────────────
+router.get('/domain', (req, res) => {
+    const d = stmts.getSetting.get('base_domain');
+    res.json({ domain: d?.value || '' });
+});
+
+router.post('/domain', (req, res) => {
+    const { domain } = req.body;
+    stmts.setSetting.run('base_domain', domain || '');
+    res.json({ success: true, domain: domain || '' });
+});
+
 module.exports = router;
 

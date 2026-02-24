@@ -8,6 +8,64 @@ const github = require('./src/github');
 
 const app = express();
 const server = http.createServer(app);
+const httpProxy = require('http-proxy');
+
+// ─── Wildcard Subdomain Reverse Proxy ────────
+// projectname.clickdep.dev → localhost:PROJECT_PORT
+const proxy = httpProxy.createProxyServer({ ws: true, xfwd: true });
+proxy.on('error', (err, req, res) => {
+    if (res.writeHead) {
+        res.writeHead(502, { 'Content-Type': 'text/html' });
+        res.end('<h1>502 — Project Unavailable</h1><p>The container may be stopped or still starting.</p>');
+    }
+});
+
+// Get the base domain from settings or default
+function getBaseDomain() {
+    const d = stmts.getSetting.get('base_domain');
+    return d?.value || null;
+}
+
+function extractSubdomain(host) {
+    const baseDomain = getBaseDomain();
+    if (!baseDomain || !host) return null;
+    const hostLower = host.toLowerCase().split(':')[0]; // strip port
+    const baseLower = baseDomain.toLowerCase();
+    if (hostLower === baseLower) return null; // exact match = dashboard
+    if (hostLower.endsWith('.' + baseLower)) {
+        return hostLower.slice(0, -(baseLower.length + 1));
+    }
+    return null;
+}
+
+// Intercept all HTTP requests for subdomains
+app.use((req, res, next) => {
+    const subdomain = extractSubdomain(req.headers.host);
+    if (!subdomain) return next(); // no subdomain — serve dashboard
+
+    const project = stmts.getProjectByName.get(subdomain);
+    if (!project || !project.port) {
+        return res.status(404).send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>404</h1><p>No project named <b>${subdomain}</b> found.</p><p><a href="https://${getBaseDomain()}">Go to ClickDep Dashboard</a></p></body></html>`);
+    }
+    if (project.status !== 'running') {
+        return res.status(503).send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>503</h1><p><b>${project.name}</b> is currently <b>${project.status}</b>.</p><p><a href="https://${getBaseDomain()}">Go to Dashboard</a></p></body></html>`);
+    }
+
+    proxy.web(req, res, { target: `http://127.0.0.1:${project.port}` });
+});
+
+// Handle WebSocket upgrade for subdomain projects
+server.on('upgrade', (req, socket, head) => {
+    const subdomain = extractSubdomain(req.headers.host);
+    if (!subdomain) return; // let the default WS handler take over
+
+    const project = stmts.getProjectByName.get(subdomain);
+    if (project && project.port && project.status === 'running') {
+        proxy.ws(req, socket, head, { target: `http://127.0.0.1:${project.port}` });
+    } else {
+        socket.destroy();
+    }
+});
 
 // ─── WebSocket Server ────────────────────────
 const wss = new WebSocket.Server({ server });

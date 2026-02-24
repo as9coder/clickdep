@@ -89,6 +89,11 @@ router.post('/github', async (req, res) => {
 
         const projectId = uuidv4();
         const projectName = name || url.split('/').pop().replace('.git', '') || 'project';
+
+        // Enforce unique name
+        const existing = stmts.getProjectByName.get(projectName);
+        if (existing) return res.status(409).json({ error: `Project name "${projectName}" already exists. Choose a different name.` });
+
         const port = dockerMgr.getNextPort();
 
         stmts.insertProject.run(
@@ -125,6 +130,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
         const projectId = uuidv4();
         const projectName = req.body.name || req.file.originalname.replace(/\.(zip|tar\.gz)$/, '') || 'upload';
+
+        // Enforce unique name
+        const existing = stmts.getProjectByName.get(projectName);
+        if (existing) return res.status(409).json({ error: `Project name "${projectName}" already exists. Choose a different name.` });
+
         const port = dockerMgr.getNextPort();
         const sourceDir = path.join(DATA_DIR, 'projects', projectId, 'source');
 
