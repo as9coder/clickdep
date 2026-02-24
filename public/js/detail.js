@@ -19,14 +19,14 @@ Views.projectDetail = async function (container, projectId) {
         <a href="#/" class="detail-back">←</a>
         <div>
           <div class="detail-title">${project.name}</div>
-          <div class="detail-subtitle">${project.framework || 'Unknown'} · Port ${project.port || '-'} · ${project.resource_preset}</div>
+          <div class="detail-subtitle">${project.framework || 'Unknown'} · ${window.App.baseDomain && project.port ? project.name + '.' + window.App.baseDomain : 'Port ' + (project.port || '-')} · ${project.resource_preset}</div>
         </div>
         <div class="detail-actions">
           ${canStart ? `<button class="btn btn-success btn-sm" id="btn-start">▶ Start</button>` : ''}
           ${canStop ? `<button class="btn btn-danger btn-sm" id="btn-stop">■ Stop</button>` : ''}
           ${canRestart ? `<button class="btn btn-ghost btn-sm" id="btn-restart">↻ Restart</button>` : ''}
           ${!isBuilding ? `<button class="btn btn-ghost btn-sm" id="btn-redeploy">🔄 Redeploy</button>` : ''}
-          ${project.port && project.status === 'running' ? `<a href="http://localhost:${project.port}" target="_blank" class="btn btn-primary btn-sm">🌐 Open Site</a>` : ''}
+          ${project.port && project.status === 'running' ? `<a href="http://${window.App.baseDomain ? project.name + '.' + window.App.baseDomain : 'localhost:' + project.port}" target="_blank" class="btn btn-primary btn-sm">🌐 Open Site</a>` : ''}
         </div>
       </div>
       <div class="card-status status-${project.status}" style="display:inline-flex;margin-bottom:20px"><span class="status-dot"></span>${project.status}</div>

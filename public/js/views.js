@@ -95,7 +95,7 @@ window.Views = {
           <div class="card-resources">
             <span class="card-resource">⚡ ${p.cpu_limit} CPU</span>
             <span class="card-resource">💾 ${formatBytes(p.memory_limit)}</span>
-            ${p.port ? `<span class="card-resource">🌐 :${p.port}</span>` : ''}
+            ${p.port ? (window.App.baseDomain ? `<span class="card-resource">🌐 ${p.name}.${window.App.baseDomain}</span>` : `<span class="card-resource">🌐 :${p.port}</span>`) : ''}
           </div>
           <div class="card-meta">
             <span class="card-meta-item">${timeAgo(p.last_deployed_at || p.created_at)}</span>
@@ -105,14 +105,17 @@ window.Views = {
         </div>`;
     };
 
-    const listItemHtml = (p) => `
+    const listItemHtml = (p) => {
+      const link = p.port ? (window.App.baseDomain ? `http://${p.name}.${window.App.baseDomain}` : `http://localhost:${p.port}`) : '';
+      return `
       <div class="project-list-item" data-project-id="${p.id}">
         <div><strong>${p.name}</strong><br><span class="text-sm text-muted">${p.framework || ''}</span></div>
         <div class="card-status status-${p.status}"><span class="status-dot"></span>${p.status}</div>
         <div class="text-sm mono">${p.cpu_limit} CPU / ${formatBytes(p.memory_limit)}</div>
         <div class="text-sm text-muted">${timeAgo(p.last_deployed_at || p.created_at)}</div>
-        <div>${p.port ? `<a href="http://localhost:${p.port}" target="_blank" class="btn btn-sm btn-ghost" onclick="event.stopPropagation()">Open</a>` : ''}</div>
+        <div>${link ? `<a href="${link}" target="_blank" class="btn btn-sm btn-ghost" onclick="event.stopPropagation()">Open</a>` : ''}</div>
       </div>`;
+    };
 
     try { projects = await API.get('/api/projects'); } catch (e) { projects = []; }
     render();

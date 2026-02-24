@@ -62,9 +62,15 @@ window.App = {
         });
     },
 
-    startApp() {
+    async startApp() {
         document.getElementById('app').classList.remove('hidden');
         WS.connect();
+
+        try {
+            const d = await API.get('/api/auth/domain');
+            this.baseDomain = d.domain || '';
+        } catch (e) { this.baseDomain = ''; }
+
         this.bindRouter();
         this.bindCommandPalette();
         this.bindKeyboard();
