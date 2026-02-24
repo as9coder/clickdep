@@ -235,7 +235,7 @@ function generateDockerfile(framework, nodeVersion = '20') {
 FROM ${baseNode} AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production=false
+RUN if [ -f package-lock.json ]; then npm ci --production=false; else npm install; fi
 COPY . .
 RUN ${framework.buildCommand}
 
@@ -263,7 +263,7 @@ CMD ["nginx", "-g", "daemon off;"]
 FROM ${baseNode}
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 RUN ${framework.buildCommand}
 ENV PORT=${framework.internalPort}
@@ -291,7 +291,7 @@ CMD ${JSON.stringify(framework.startCommand.split(' '))}
 FROM ${baseNode}
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production
+RUN if [ -f package-lock.json ]; then npm ci --production; else npm install --production; fi
 COPY . .
 ENV PORT=${framework.internalPort}
 ENV HOST=0.0.0.0
@@ -305,7 +305,7 @@ CMD ${JSON.stringify(framework.startCommand.split(' '))}
 FROM ${baseNode}
 WORKDIR /app
 COPY . .
-RUN if [ -f package.json ]; then npm ci; fi
+RUN if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; fi
 EXPOSE ${framework.internalPort}
 CMD ["node", "index.js"]
 `;
