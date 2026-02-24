@@ -11,19 +11,40 @@ const server = http.createServer(app);
 const httpProxy = require('http-proxy');
 
 // ─── Wildcard Subdomain Reverse Proxy ────────
-// projectname.clickdep.dev → localhost:PROJECT_PORT
-const proxy = httpProxy.createProxyServer({ ws: true, xfwd: true });
+// Keep-alive agent: reuses TCP connections to containers (huge latency win)
+const keepAliveAgent = new http.Agent({
+    keepAlive: true,
+    maxSockets: 64,
+    maxFreeSockets: 16,
+    timeout: 10000,
+});
+
+const proxy = httpProxy.createProxyServer({
+    ws: true,
+    xfwd: true,
+    agent: keepAliveAgent,
+    proxyTimeout: 10000,
+    timeout: 10000,
+});
+
 proxy.on('error', (err, req, res) => {
-    if (res.writeHead) {
+    if (res && res.writeHead && !res.headersSent) {
         res.writeHead(502, { 'Content-Type': 'text/html' });
         res.end('<h1>502 — Project Unavailable</h1><p>The container may be stopped or still starting.</p>');
     }
 });
 
-// Get the base domain from settings or default
+// Cache base domain — read from DB once every 5s instead of per-request
+let _cachedDomain = null;
+let _domainCacheTs = 0;
 function getBaseDomain() {
-    const d = stmts.getSetting.get('base_domain');
-    return d?.value || null;
+    const now = Date.now();
+    if (now - _domainCacheTs > 5000) {
+        const d = stmts.getSetting.get('base_domain');
+        _cachedDomain = d?.value || null;
+        _domainCacheTs = now;
+    }
+    return _cachedDomain;
 }
 
 function extractSubdomain(host) {
