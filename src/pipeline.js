@@ -93,7 +93,7 @@ async function deploy(projectId, opts = {}) {
         const startCmd = project.start_command || framework.startCommand;
         const installCmd = project.install_command || framework.installCommand;
         const outputDir = project.output_dir || framework.outputDir;
-        const internalPort = project.internal_port || framework.internalPort;
+        const internalPort = framework.internalPort;
 
         stmts.updateProjectFramework.run(
             framework.name, buildCmd, startCmd, installCmd, outputDir, projectId
