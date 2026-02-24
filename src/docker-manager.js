@@ -71,7 +71,7 @@ async function createContainer(projectId, imageTag, opts = {}) {
         cpuLimit = 0.25,
         memoryLimit = 268435456,
         envVars = {},
-        restartPolicy = 'on-failure',
+        restartPolicy = 'no',
         name,
     } = opts;
 
@@ -83,6 +83,7 @@ async function createContainer(projectId, imageTag, opts = {}) {
         'always': { Name: 'always' },
         'on-failure': { Name: 'on-failure', MaximumRetryCount: 5 },
         'unless-stopped': { Name: 'unless-stopped' },
+        'no': { Name: '' },
         'never': { Name: '' },
     };
 
@@ -114,47 +115,52 @@ async function createContainer(projectId, imageTag, opts = {}) {
 
 async function startContainer(projectId) {
     const entry = containerMap.get(projectId);
-    if (!entry) {
-        // Try to find by label
-        const project = stmts.getProject.get(projectId);
-        if (project && project.container_id) {
-            const container = docker.getContainer(project.container_id);
-            await container.start();
-            containerMap.set(projectId, { container, id: project.container_id });
-            return container;
-        }
-        throw new Error('Container not found');
+    if (entry) {
+        await entry.container.start();
+        return entry.container;
     }
-    await entry.container.start();
-    return entry.container;
+    // Fallback: look up container_id from DB
+    const project = stmts.getProject.get(projectId);
+    if (project && project.container_id) {
+        const container = docker.getContainer(project.container_id);
+        await container.start();
+        containerMap.set(projectId, { container, id: project.container_id });
+        return container;
+    }
+    throw new Error('Container not found');
 }
 
 async function stopContainer(projectId) {
     const entry = containerMap.get(projectId);
-    if (!entry) {
-        const project = stmts.getProject.get(projectId);
-        if (project && project.container_id) {
-            const container = docker.getContainer(project.container_id);
-            await container.stop({ t: 10 });
-            return;
-        }
-        throw new Error('Container not found');
+    if (entry) {
+        try { await entry.container.stop({ t: 10 }); } catch (e) { /* already stopped */ }
+        return;
     }
-    await entry.container.stop({ t: 10 });
+    // Fallback: look up container_id from DB
+    const project = stmts.getProject.get(projectId);
+    if (project && project.container_id) {
+        const container = docker.getContainer(project.container_id);
+        try { await container.stop({ t: 10 }); } catch (e) { /* already stopped */ }
+        return;
+    }
+    throw new Error('Container not found');
 }
 
 async function restartContainer(projectId) {
     const entry = containerMap.get(projectId);
-    if (!entry) {
-        const project = stmts.getProject.get(projectId);
-        if (project && project.container_id) {
-            const container = docker.getContainer(project.container_id);
-            await container.restart({ t: 10 });
-            return;
-        }
-        throw new Error('Container not found');
+    if (entry) {
+        await entry.container.restart({ t: 10 });
+        return;
     }
-    await entry.container.restart({ t: 10 });
+    // Fallback: look up container_id from DB
+    const project = stmts.getProject.get(projectId);
+    if (project && project.container_id) {
+        const container = docker.getContainer(project.container_id);
+        await container.restart({ t: 10 });
+        containerMap.set(projectId, { container, id: project.container_id });
+        return;
+    }
+    throw new Error('Container not found');
 }
 
 async function removeContainer(projectId) {
@@ -345,12 +351,21 @@ async function recoverContainers() {
 }
 
 async function stopAllContainers() {
+    // Stop all containers from in-memory map
     const promises = [];
     for (const [projectId, entry] of containerMap) {
         promises.push(
             entry.container.stop({ t: 10 }).catch(() => { })
         );
     }
+    // Also find any ClickDep containers Docker knows about
+    try {
+        const containers = await docker.listContainers({ all: false, filters: { label: ['clickdep.managed=true'] } });
+        for (const c of containers) {
+            const container = docker.getContainer(c.Id);
+            promises.push(container.stop({ t: 10 }).catch(() => { }));
+        }
+    } catch (e) { /* Docker might not be available */ }
     await Promise.allSettled(promises);
 }
 
