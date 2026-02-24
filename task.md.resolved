@@ -1,0 +1,38 @@
+# ClickDep v2 — Self-Hosted Deployment Platform
+
+## Planning
+- [/] Deep architecture design with Docker containerization
+- [/] Design 100 unique, useful features
+- [/] Write implementation plan
+- [ ] Get user approval
+
+## Execution — Backend Core
+- [ ] Project scaffolding (package.json, .env, Docker configs)
+- [ ] Database layer (SQLite with full schema)
+- [ ] Framework detection engine (14+ frameworks)
+- [ ] Docker container manager (create, start, stop, resource limits)
+- [ ] Deploy pipeline (clone → detect → build image → run container)
+- [ ] Nginx reverse proxy manager (dynamic config generation)
+- [ ] API routes (projects, system, analytics, webhooks)
+- [ ] WebSocket server (live logs, status updates, notifications)
+- [ ] GitHub integration (OAuth, webhooks, branch deploy)
+- [ ] Scheduling & cron system
+- [ ] Backup & snapshot system
+
+## Execution — Frontend Dashboard
+- [ ] Design system (CSS tokens, dark theme, glassmorphism)
+- [ ] SPA shell & router
+- [ ] Dashboard view (project cards, search, filters, stats)
+- [ ] Project detail view (tabs: overview, deployments, logs, settings, analytics)
+- [ ] New project wizard (GitHub / URL / Upload)
+- [ ] Resource management UI (CPU/RAM sliders, presets)
+- [ ] System monitor (real-time CPU, memory, disk, network)
+- [ ] Settings & configuration pages
+- [ ] Notifications & toast system
+
+## Verification
+- [ ] Server starts and API responds
+- [ ] Deploy a test project from GitHub URL
+- [ ] Verify Docker container creation with resource limits
+- [ ] Verify start/stop/restart state machine
+- [ ] Browser walkthrough of all dashboard views
