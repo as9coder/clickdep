@@ -268,44 +268,80 @@ Views.settings = async function (container) {
       // Open GitHub in new tab automatically
       window.open(flow.verification_uri, '_blank');
 
-      // Client-side polling — poll /device-poll every N seconds
+      // Client-side polling via recursive setTimeout
       const pollStatus = container.querySelector('#gh-poll-status');
       pollStatus.textContent = 'Waiting for you to authorize on GitHub...';
 
-      let interval = 5;
+      let interval = 6; // seconds between polls (GitHub minimum is 5)
       let attempts = 0;
-      const maxAttempts = 120; // 10 min max
+      let stopped = false;
 
-      const pollTimer = setInterval(async () => {
+      const doPoll = async () => {
+        if (stopped) return;
         attempts++;
-        if (attempts > maxAttempts) {
-          clearInterval(pollTimer);
-          pollStatus.textContent = '❌ Timed out. Click Connect again.';
+        if (attempts > 60) { // 6s × 60 = ~6 min
+          pollStatus.textContent = '❌ Timed out after 6 minutes. Click Connect again.';
           return;
         }
 
+        pollStatus.textContent = `⏳ Polling GitHub... (attempt ${attempts})`;
+
         try {
-          const result = await API.post('/api/auth/github/device-poll');
+          // Raw fetch with timeout — bypass API wrapper to avoid HTML parse crashes
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 10000);
+          const headers = { 'Content-Type': 'application/json' };
+          if (API.token) headers['Authorization'] = `Bearer ${API.token}`;
+
+          const res = await fetch('/api/auth/github/device-poll', {
+            method: 'POST',
+            headers,
+            signal: ctrl.signal,
+          });
+          clearTimeout(timer);
+
+          const text = await res.text();
+          let result;
+          try { result = JSON.parse(text); }
+          catch (e) {
+            // Got HTML instead of JSON — probably Cloudflare timeout
+            console.error('device-poll returned non-JSON:', text.slice(0, 200));
+            pollStatus.textContent = `⏳ Waiting... (attempt ${attempts}, retrying)`;
+            setTimeout(doPoll, interval * 1000);
+            return;
+          }
 
           if (result.status === 'success') {
-            clearInterval(pollTimer);
+            stopped = true;
             App.toast(`Connected to GitHub as @${result.user.login}! 🎉`, 'success');
             Views.settings(container);
+            return;
           } else if (result.status === 'expired') {
-            clearInterval(pollTimer);
+            stopped = true;
             pollStatus.textContent = '❌ Code expired. Click Connect again.';
+            return;
           } else if (result.status === 'slow_down') {
-            interval = result.interval || interval + 5;
+            interval = Math.max(interval, result.interval || 10);
           } else if (result.status === 'error') {
-            clearInterval(pollTimer);
+            stopped = true;
             pollStatus.textContent = `❌ ${result.error}`;
+            return;
+          } else if (result.error) {
+            // Server returned an error (e.g. 400/500)
+            pollStatus.textContent = `⏳ Waiting... (${result.error})`;
           }
-          // 'pending' — just keep going
+          // pending — schedule next poll
         } catch (e) {
-          // network error — keep trying
-          pollStatus.textContent = 'Still waiting... (retrying)';
+          // fetch abort or network error
+          console.error('device-poll error:', e.message);
+          pollStatus.textContent = `⏳ Waiting... (attempt ${attempts}, network retry)`;
         }
-      }, interval * 1000);
+
+        setTimeout(doPoll, interval * 1000);
+      };
+
+      // Start first poll after the interval
+      setTimeout(doPoll, interval * 1000);
 
     } catch (e) { App.toast(e.message, 'error'); }
   });
