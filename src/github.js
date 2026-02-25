@@ -15,6 +15,7 @@ function ghRequest(path, token, method = 'GET', body = null) {
             hostname: 'api.github.com',
             path,
             method,
+            timeout: 8000,
             headers: {
                 'User-Agent': 'ClickDep/2.0',
                 'Accept': 'application/vnd.github+json',
@@ -34,6 +35,7 @@ function ghRequest(path, token, method = 'GET', body = null) {
                 }
             });
         });
+        req.on('timeout', () => { req.destroy(); reject(new Error('GitHub API timeout')); });
         req.on('error', reject);
         if (body) req.write(JSON.stringify(body));
         req.end();
@@ -47,6 +49,7 @@ function ghFormPost(hostname, path, body) {
             hostname,
             path,
             method: 'POST',
+            timeout: 8000,
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -61,6 +64,7 @@ function ghFormPost(hostname, path, body) {
                 catch (e) { resolve(data); }
             });
         });
+        req.on('timeout', () => { req.destroy(); reject(new Error('GitHub API timeout')); });
         req.on('error', reject);
         req.write(encoded);
         req.end();
@@ -84,6 +88,8 @@ async function pollDeviceFlow(clientId, deviceCode) {
         device_code: deviceCode,
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
     });
+
+    console.log('[GitHub OAuth Poll Result]:', result);
 
     if (result.access_token) {
         return { status: 'success', token: result.access_token };
