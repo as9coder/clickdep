@@ -204,7 +204,11 @@ window.Views = {
         ${activeTab === 'repos' ? reposForm : activeTab === 'github' ? githubForm : uploadForm}`;
 
       container.querySelectorAll('.wizard-tab').forEach(t => t.addEventListener('click', () => { activeTab = t.dataset.tab; render(); if (activeTab === 'repos' && repos.length === 0) loadRepos(); }));
-      container.querySelectorAll('.preset-card').forEach(c => c.addEventListener('click', () => { selectedPreset = c.dataset.preset; render(); }));
+      container.querySelectorAll('.preset-card').forEach(c => c.addEventListener('click', () => {
+        selectedPreset = c.dataset.preset;
+        container.querySelectorAll('.preset-card').forEach(card => card.classList.remove('active'));
+        c.classList.add('active');
+      }));
 
       // Repo click → fill in GitHub form
       container.querySelectorAll('[data-repo-url]').forEach(el => el.addEventListener('click', () => {
