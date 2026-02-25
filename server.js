@@ -278,11 +278,8 @@ async function start() {
         if (recovered > 0) console.log(`   Recovered ${recovered} container(s)`);
     }
 
-    // Start auto-watcher if GitHub is connected
-    const ghToken = stmts.getSetting.get('github_token');
-    if (ghToken && ghToken.value) {
-        github.startWatcher();
-    }
+    // Start auto-watcher (works for public repos even without token)
+    github.startWatcher();
 
     server.listen(PORT, () => {
         console.log('');

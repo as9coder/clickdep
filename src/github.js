@@ -77,36 +77,25 @@ async function startDeviceFlow(clientId) {
     return result; // { device_code, user_code, verification_uri, expires_in, interval }
 }
 
-async function pollDeviceFlow(clientId, deviceCode, interval = 5) {
-    return new Promise((resolve, reject) => {
-        const poll = setInterval(async () => {
-            try {
-                const result = await ghFormPost('github.com', '/login/oauth/access_token', {
-                    client_id: clientId,
-                    device_code: deviceCode,
-                    grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-                });
-
-                if (result.access_token) {
-                    clearInterval(poll);
-                    resolve(result.access_token);
-                } else if (result.error === 'expired_token') {
-                    clearInterval(poll);
-                    reject(new Error('Device code expired. Try again.'));
-                }
-                // 'authorization_pending' and 'slow_down' — just keep polling
-                if (result.error === 'slow_down') {
-                    interval += 5;
-                }
-            } catch (e) {
-                clearInterval(poll);
-                reject(e);
-            }
-        }, interval * 1000);
-
-        // Timeout after 10 minutes
-        setTimeout(() => { clearInterval(poll); reject(new Error('Timed out')); }, 600000);
+// Single attempt to exchange device code for token — returns immediately
+async function pollDeviceFlow(clientId, deviceCode) {
+    const result = await ghFormPost('github.com', '/login/oauth/access_token', {
+        client_id: clientId,
+        device_code: deviceCode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
     });
+
+    if (result.access_token) {
+        return { status: 'success', token: result.access_token };
+    } else if (result.error === 'authorization_pending') {
+        return { status: 'pending' };
+    } else if (result.error === 'slow_down') {
+        return { status: 'slow_down', interval: (result.interval || 10) };
+    } else if (result.error === 'expired_token') {
+        return { status: 'expired' };
+    } else {
+        return { status: 'error', error: result.error_description || result.error || 'Unknown error' };
+    }
 }
 
 // ─── Repo Browser ────────────────────────────
@@ -163,8 +152,8 @@ async function getUser(token) {
 // Checks all auto_deploy projects every POLL_INTERVAL for new commits
 // If new commit detected → auto-pull, rebuild, deploy
 async function checkForUpdates() {
-    const token = stmts.getSetting.get('github_token');
-    if (!token) return;
+    const tokenRow = stmts.getSetting.get('github_token');
+    const token = tokenRow?.value || null; // null = public repos only (60 req/hr)
 
     const allProjects = stmts.getAllProjects.all();
     const watchable = allProjects.filter(p =>
@@ -183,7 +172,7 @@ async function checkForUpdates() {
             const branch = project.branch || 'main';
 
             // Get latest commit
-            const latest = await getLatestCommit(token.value, owner, repo, branch);
+            const latest = await getLatestCommit(token, owner, repo, branch);
             if (!latest) continue;
 
             // Check if we've seen this commit

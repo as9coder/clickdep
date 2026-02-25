@@ -172,32 +172,36 @@ router.post('/github/device-start', async (req, res) => {
     }
 });
 
-// Step 2: Poll for authorization completion
+// Step 2: Single poll attempt — client calls this repeatedly
 router.post('/github/device-poll', async (req, res) => {
     try {
         const clientId = stmts.getSetting.get('github_client_id');
         const deviceCode = stmts.getSetting.get('github_device_code');
-        if (!clientId || !deviceCode) return res.status(400).json({ error: 'No active device flow' });
+        if (!clientId || !deviceCode || !deviceCode.value) return res.status(400).json({ error: 'No active device flow' });
 
-        const interval = parseInt(stmts.getSetting.get('github_device_interval')?.value || '5');
-        const token = await github.pollDeviceFlow(clientId.value, deviceCode.value, interval);
+        const result = await github.pollDeviceFlow(clientId.value, deviceCode.value);
 
-        // Store the token
-        stmts.setSetting.run('github_token', token);
+        if (result.status === 'success') {
+            // Store the token
+            stmts.setSetting.run('github_token', result.token);
 
-        // Get user info
-        const user = await github.getUser(token);
-        stmts.setSetting.run('github_user', JSON.stringify(user));
+            // Get user info
+            const user = await github.getUser(result.token);
+            stmts.setSetting.run('github_user', JSON.stringify(user));
 
-        // Cleanup
-        stmts.setSetting.run('github_device_code', '');
+            // Cleanup
+            stmts.setSetting.run('github_device_code', '');
 
-        stmts.insertAudit.run('github_connect', null, null, `Connected GitHub account: ${user.login}`, '');
+            stmts.insertAudit.run('github_connect', null, null, `Connected GitHub account: ${user.login}`, '');
 
-        // Start the auto-watcher now that we have a token
-        github.startWatcher();
+            // Start the auto-watcher now that we have a token
+            github.startWatcher();
 
-        res.json({ success: true, user });
+            return res.json({ status: 'success', user });
+        }
+
+        // Return status as-is (pending, slow_down, expired, error)
+        res.json(result);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

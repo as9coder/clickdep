@@ -263,17 +263,45 @@ Views.settings = async function (container) {
       // Open GitHub in new tab automatically
       window.open(flow.verification_uri, '_blank');
 
-      // Start polling for authorization
-      container.querySelector('#gh-poll-status').textContent = 'Waiting for you to authorize on GitHub...';
+      // Client-side polling — poll /device-poll every N seconds
+      const pollStatus = container.querySelector('#gh-poll-status');
+      pollStatus.textContent = 'Waiting for you to authorize on GitHub...';
 
-      try {
-        const result = await API.post('/api/auth/github/device-poll');
-        App.toast(`Connected to GitHub as @${result.user.login}! 🎉`, 'success');
-        Views.settings(container); // Re-render with connected state
-      } catch (e) {
-        container.querySelector('#gh-poll-status').textContent = `❌ ${e.message}`;
-        App.toast(e.message, 'error');
-      }
+      let interval = 5;
+      let attempts = 0;
+      const maxAttempts = 120; // 10 min max
+
+      const pollTimer = setInterval(async () => {
+        attempts++;
+        if (attempts > maxAttempts) {
+          clearInterval(pollTimer);
+          pollStatus.textContent = '❌ Timed out. Click Connect again.';
+          return;
+        }
+
+        try {
+          const result = await API.post('/api/auth/github/device-poll');
+
+          if (result.status === 'success') {
+            clearInterval(pollTimer);
+            App.toast(`Connected to GitHub as @${result.user.login}! 🎉`, 'success');
+            Views.settings(container);
+          } else if (result.status === 'expired') {
+            clearInterval(pollTimer);
+            pollStatus.textContent = '❌ Code expired. Click Connect again.';
+          } else if (result.status === 'slow_down') {
+            interval = result.interval || interval + 5;
+          } else if (result.status === 'error') {
+            clearInterval(pollTimer);
+            pollStatus.textContent = `❌ ${result.error}`;
+          }
+          // 'pending' — just keep going
+        } catch (e) {
+          // network error — keep trying
+          pollStatus.textContent = 'Still waiting... (retrying)';
+        }
+      }, interval * 1000);
+
     } catch (e) { App.toast(e.message, 'error'); }
   });
 
