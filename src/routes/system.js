@@ -7,6 +7,38 @@ const dockerMgr = require('../docker-manager');
 
 const router = express.Router();
 
+// ─── Power Consumption via Intel RAPL ────────
+let _lastEnergyUj = null;
+let _lastEnergyTs = null;
+const RAPL_PATH = '/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj';
+const CPU_TDP_W = 65; // i5-12400 TDP — used as fallback estimate
+
+async function getPowerWatts(cpuLoad) {
+    try {
+        const raw = fs.readFileSync(RAPL_PATH, 'utf8').trim();
+        const energyUj = parseInt(raw);
+        const now = Date.now();
+
+        if (_lastEnergyUj !== null && _lastEnergyTs !== null) {
+            const deltaUj = energyUj - _lastEnergyUj;
+            const deltaMs = now - _lastEnergyTs;
+            if (deltaMs > 0 && deltaUj > 0) {
+                const watts = (deltaUj / deltaMs) / 1000; // µJ/ms = mW → ÷1000 = W
+                _lastEnergyUj = energyUj;
+                _lastEnergyTs = now;
+                return { watts: Math.round(watts * 10) / 10, source: 'rapl' };
+            }
+        }
+        _lastEnergyUj = energyUj;
+        _lastEnergyTs = now;
+    } catch (e) {
+        // RAPL not available (Windows/no permissions) — estimate from TDP
+    }
+    // Estimate: idle ~5W, full load ~TDP
+    const estimated = Math.round((5 + (cpuLoad / 100) * CPU_TDP_W) * 10) / 10;
+    return { watts: estimated, source: 'estimate' };
+}
+
 // ─── HOST SYSTEM STATS ───────────────────────
 router.get('/stats', async (req, res) => {
     try {
@@ -18,6 +50,8 @@ router.get('/stats', async (req, res) => {
             si.time(),
             si.cpuTemperature().catch(() => ({ main: null })),
         ]);
+
+        const power = await getPowerWatts(cpu.currentLoad);
 
         const projectCount = stmts.countProjects.get().count;
         const runningCount = stmts.countRunning.get().count;
@@ -50,6 +84,7 @@ router.get('/stats', async (req, res) => {
             },
             uptime: time.uptime,
             temperature: temp.main,
+            power,
             projects: {
                 total: projectCount,
                 running: runningCount,

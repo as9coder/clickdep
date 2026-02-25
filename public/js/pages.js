@@ -14,6 +14,11 @@ Views.monitor = async function (container) {
         <div class="stat-card"><div class="stat-card-label">Projects</div><div class="stat-card-value">${stats ? stats.projects.running + ' / ' + stats.projects.total : '--'}</div>
           <div class="stat-card-sub">${stats ? stats.projects.totalDeploys + ' total deploys' : ''}</div></div>
         <div class="stat-card"><div class="stat-card-label">Temperature</div><div class="stat-card-value">${stats && stats.temperature ? stats.temperature + '°C' : 'N/A'}</div></div>
+        <div class="stat-card" style="${stats?.power ? (stats.power.watts > 55 ? 'border-color:var(--red)' : stats.power.watts > 40 ? 'border-color:var(--yellow)' : '') : ''}">
+          <div class="stat-card-label">⚡ Power Draw</div>
+          <div class="stat-card-value" style="${stats?.power ? (stats.power.watts > 55 ? 'color:var(--red)' : stats.power.watts > 40 ? 'color:var(--yellow)' : '') : ''}">${stats?.power ? stats.power.watts + ' W' : '--'}</div>
+          <div class="stat-card-sub">${stats?.power ? (stats.power.source === 'rapl' ? '📡 Intel RAPL (live)' : '📊 Estimated from TDP') : ''}</div>
+        </div>
       </div>
       ${stats ? `
       <div class="monitor-grid" style="margin-top:16px">
