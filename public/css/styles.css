@@ -1847,3 +1847,74 @@ input[type="range"]::-webkit-slider-thumb:hover {
     align-items: flex-start;
   }
 }
+
+/* ─── VPS OS Grid ────────────────────────────── */
+.os-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.os-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 2px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.os-card:hover {
+  border-color: var(--blue);
+  background: var(--bg-card-hover);
+}
+
+.os-card.active {
+  border-color: var(--blue);
+  background: hsla(210, 100%, 60%, 0.08);
+  box-shadow: 0 0 0 1px var(--blue);
+}
+
+.os-icon {
+  font-size: 24px;
+}
+
+.os-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.os-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── VPS Detail Tabs ────────────────────────── */
+.tab-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--blue);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}

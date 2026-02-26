@@ -118,9 +118,31 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS vps_instances (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'creating',
+    os_image TEXT DEFAULT 'ubuntu:22.04',
+    cpu_limit REAL DEFAULT 1.0,
+    memory_limit INTEGER DEFAULT 1073741824,
+    storage_limit INTEGER DEFAULT 10737418240,
+    container_id TEXT,
+    port INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    last_accessed_at TEXT,
+    startup_script TEXT DEFAULT '',
+    env_vars TEXT DEFAULT '{}',
+    ports TEXT DEFAULT '[]',
+    notes TEXT DEFAULT '',
+    auto_suspend_minutes INTEGER DEFAULT 0,
+    tags TEXT DEFAULT '[]'
+  );
+
   CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id);
   CREATE INDEX IF NOT EXISTS idx_metrics_project ON metrics_snapshots(project_id);
   CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+  CREATE INDEX IF NOT EXISTS idx_vps_name ON vps_instances(name);
 `);
 
 // Prepared statements
@@ -184,6 +206,21 @@ const stmts = {
   countRunning: db.prepare(`SELECT COUNT(*) as count FROM projects WHERE status = 'running'`),
   countDeployments: db.prepare(`SELECT COUNT(*) as count FROM deployments`),
   recentActivity: db.prepare(`SELECT d.*, p.name as project_name, p.framework FROM deployments d JOIN projects p ON d.project_id = p.id ORDER BY d.started_at DESC LIMIT ?`),
+
+  // VPS
+  getAllVPS: db.prepare(`SELECT * FROM vps_instances ORDER BY created_at DESC`),
+  getVPS: db.prepare(`SELECT * FROM vps_instances WHERE id = ?`),
+  getVPSByName: db.prepare(`SELECT * FROM vps_instances WHERE LOWER(name) = LOWER(?)`),
+  insertVPS: db.prepare(`INSERT INTO vps_instances (id, name, os_image, cpu_limit, memory_limit, storage_limit, startup_script, env_vars, ports, notes, auto_suspend_minutes, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  updateVPSStatus: db.prepare(`UPDATE vps_instances SET status=?, updated_at=datetime('now') WHERE id=?`),
+  updateVPSContainer: db.prepare(`UPDATE vps_instances SET container_id=?, port=?, status=?, updated_at=datetime('now') WHERE id=?`),
+  updateVPSSettings: db.prepare(`UPDATE vps_instances SET startup_script=?, env_vars=?, ports=?, notes=?, auto_suspend_minutes=?, tags=?, updated_at=datetime('now') WHERE id=?`),
+  updateVPSAccess: db.prepare(`UPDATE vps_instances SET last_accessed_at=datetime('now') WHERE id=?`),
+  updateVPSResources: db.prepare(`UPDATE vps_instances SET cpu_limit=?, memory_limit=?, storage_limit=?, updated_at=datetime('now') WHERE id=?`),
+  deleteVPS: db.prepare(`DELETE FROM vps_instances WHERE id=?`),
+  getRunningVPS: db.prepare(`SELECT * FROM vps_instances WHERE status = 'running'`),
+  countVPS: db.prepare(`SELECT COUNT(*) as count FROM vps_instances`),
+  countRunningVPS: db.prepare(`SELECT COUNT(*) as count FROM vps_instances WHERE status = 'running'`),
 };
 
 module.exports = { db, stmts, DATA_DIR, DB_PATH };

@@ -96,7 +96,11 @@ window.App = {
 
         // Update nav
         document.querySelectorAll('.nav-item').forEach(n => {
-            n.classList.toggle('active', n.getAttribute('href') === hash || (hash.startsWith('#/project') && n.dataset.page === 'dashboard'));
+            n.classList.toggle('active',
+                n.getAttribute('href') === hash ||
+                (hash.startsWith('#/project') && n.dataset.page === 'dashboard') ||
+                (hash.startsWith('#/vps') && n.dataset.page === 'vps')
+            );
         });
 
         if (hash === '#/' || hash === '#') {
@@ -112,6 +116,13 @@ window.App = {
             await Views.activity(container);
         } else if (hash === '#/settings') {
             await Views.settings(container);
+        } else if (hash === '#/vps') {
+            await VPSViews.list(container);
+        } else if (hash === '#/vps/new') {
+            await VPSViews.create(container);
+        } else if (hash.startsWith('#/vps/')) {
+            const id = hash.replace('#/vps/', '');
+            await VPSViews.detail(container, id);
         } else {
             container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">404</div><h2>Page not found</h2><a href="#/" class="btn btn-primary">Go Home</a></div>';
         }

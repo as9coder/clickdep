@@ -2,8 +2,10 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const fs = require('fs');
 const { stmts } = require('./src/db');
 const dockerMgr = require('./src/docker-manager');
+const vpsMgr = require('./src/vps-manager');
 const github = require('./src/github');
 
 const app = express();
@@ -64,6 +66,21 @@ app.use((req, res, next) => {
     const subdomain = extractSubdomain(req.headers.host);
     if (!subdomain) return next(); // no subdomain — serve dashboard
 
+    // VPS terminal subdomain: namevps.clickdep.dev
+    if (subdomain.endsWith('vps')) {
+        const vpsName = subdomain.slice(0, -3); // strip 'vps' suffix
+        const vps = stmts.getVPSByName.get(vpsName);
+        if (!vps) {
+            return res.status(404).send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>404</h1><p>No VPS named <b>${vpsName}</b> found.</p><p><a href="https://${getBaseDomain()}">Go to ClickDep Dashboard</a></p></body></html>`);
+        }
+        if (vps.status !== 'running') {
+            return res.status(503).send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>503</h1><p>VPS <b>${vps.name}</b> is <b>${vps.status}</b>.</p></body></html>`);
+        }
+        // Serve standalone terminal HTML
+        return res.sendFile(path.join(__dirname, 'public', 'terminal.html'));
+    }
+
+    // Website project subdomain
     const project = stmts.getProjectByName.get(subdomain);
     if (!project || !project.port) {
         return res.status(404).send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>404</h1><p>No project named <b>${subdomain}</b> found.</p><p><a href="https://${getBaseDomain()}">Go to ClickDep Dashboard</a></p></body></html>`);
@@ -135,12 +152,53 @@ wss.on('connection', (ws) => {
                     ws.send(JSON.stringify({ type: 'metrics', projectId: data.projectId, stats }));
                 }
             }
+
+            // ─── VPS Terminal ─────────────────────
+            if (data.type === 'vps_terminal_start' && data.vpsId) {
+                try {
+                    const { stream, exec } = await vpsMgr.execTerminal(data.vpsId, data.cols || 80, data.rows || 24);
+                    ws._vpsStream = stream;
+                    ws._vpsExec = exec;
+                    ws._vpsId = data.vpsId;
+
+                    stream.on('data', (chunk) => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'vps_terminal_data', data: chunk.toString('base64') }));
+                        }
+                    });
+
+                    stream.on('end', () => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'vps_terminal_exit' }));
+                        }
+                    });
+
+                    ws.send(JSON.stringify({ type: 'vps_terminal_ready' }));
+                } catch (e) {
+                    ws.send(JSON.stringify({ type: 'vps_terminal_error', error: e.message }));
+                }
+            }
+
+            if (data.type === 'vps_terminal_input' && ws._vpsStream) {
+                const buf = Buffer.from(data.data, 'base64');
+                ws._vpsStream.write(buf);
+            }
+
+            if (data.type === 'vps_terminal_resize' && ws._vpsExec) {
+                vpsMgr.resizeTerminal(ws._vpsExec, data.cols, data.rows);
+            }
+
+            if (data.type === 'vps_terminal_stop') {
+                if (ws._vpsStream) { ws._vpsStream.end(); ws._vpsStream = null; }
+                ws._vpsExec = null;
+            }
         } catch (e) { /* ignore bad messages */ }
     });
 
     ws.on('close', () => {
         wsClients.delete(ws);
         if (ws._logStream) ws._logStream.destroy();
+        if (ws._vpsStream) { try { ws._vpsStream.end(); } catch (e) { } }
     });
 });
 
@@ -205,16 +263,19 @@ const projectRoutes = require('./src/routes/projects');
 const systemRoutes = require('./src/routes/system');
 const authRoutes = require('./src/routes/auth');
 const webhookRoutes = require('./src/routes/webhooks');
+const vpsRoutes = require('./src/routes/vps');
 
 // Attach broadcast to routes that need it
 projectRoutes.setBroadcast(broadcast);
 webhookRoutes.setBroadcast(broadcast);
+vpsRoutes.setBroadcast(broadcast);
 github.setBroadcast(broadcast);
 
 app.use('/api/projects', projectRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/vps', vpsRoutes);
 
 // SPA fallback
 app.get('*', (req, res) => {
@@ -275,7 +336,10 @@ async function start() {
         console.log('🐳 Docker connected');
         // Recover containers from last session
         const recovered = await dockerMgr.recoverContainers();
-        if (recovered > 0) console.log(`   Recovered ${recovered} container(s)`);
+        if (recovered > 0) console.log(`   Recovered ${recovered} project container(s)`);
+        // Recover VPS containers
+        const vpsRecovered = await vpsMgr.recoverVPS();
+        if (vpsRecovered > 0) console.log(`   Recovered ${vpsRecovered} VPS container(s)`);
     }
 
     // Start auto-watcher (works for public repos even without token)

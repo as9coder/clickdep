@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Terminal — ClickDep</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Courier Prime', monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-bar {
+            background: #1a1a2e;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #2a2a3e;
+            flex-shrink: 0;
+        }
+
+        .terminal-bar .dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .terminal-bar .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red {
+            background: #ff5f57;
+        }
+
+        .dot-yellow {
+            background: #febc2e;
+        }
+
+        .dot-green {
+            background: #28c840;
+        }
+
+        .terminal-bar .title {
+            color: #888;
+            font-size: 13px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .terminal-bar .status {
+            font-size: 12px;
+            color: #4ade80;
+        }
+
+        .terminal-bar .status.connecting {
+            color: #fbbf24;
+        }
+
+        .terminal-bar .status.error {
+            color: #f87171;
+        }
+
+        #terminal-container {
+            flex: 1;
+            padding: 4px;
+            overflow: hidden;
+        }
+
+        .reconnect-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            border: 1px solid #3a3a4e;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            display: none;
+        }
+
+        .reconnect-btn:hover {
+            background: #2a2a3e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="terminal-bar">
+        <div class="dots">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+        </div>
+        <div class="title" id="terminal-title">VPS Terminal</div>
+        <div class="status connecting" id="terminal-status">Connecting...</div>
+    </div>
+    <div id="terminal-container"></div>
+    <button class="reconnect-btn" id="reconnect-btn" onclick="connect()">🔄 Reconnect</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.min.js"></script>
+    <script>
+        // Extract VPS name from subdomain: namevps.clickdep.dev → name
+        const host = location.hostname;
+        const parts = host.split('.');
+        const subdomain = parts[0]; // e.g. "namevps"
+        const vpsName = subdomain.endsWith('vps') ? subdomain.slice(0, -3) : subdomain;
+
+        document.getElementById('terminal-title').textContent = `${vpsName} — VPS Terminal`;
+        document.title = `${vpsName} — VPS Terminal`;
+
+        // Initialize xterm.js
+        const term = new Terminal({
+            cursorBlink: true,
+            cursorStyle: 'bar',
+            fontSize: 14,
+            fontFamily: "'Courier Prime', 'Courier New', monospace",
+            theme: {
+                background: '#0a0a0a',
+                foreground: '#e0e0e0',
+                cursor: '#4ade80',
+                selectionBackground: '#3a3a5e',
+                black: '#0a0a0a',
+                red: '#f87171',
+                green: '#4ade80',
+                yellow: '#fbbf24',
+                blue: '#60a5fa',
+                magenta: '#c084fc',
+                cyan: '#22d3ee',
+                white: '#e0e0e0',
+            },
+            allowTransparency: true,
+            scrollback: 5000,
+        });
+
+        const fitAddon = new FitAddon.FitAddon();
+        const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+        term.loadAddon(fitAddon);
+        term.loadAddon(webLinksAddon);
+
+        term.open(document.getElementById('terminal-container'));
+        fitAddon.fit();
+
+        window.addEventListener('resize', () => fitAddon.fit());
+
+        const statusEl = document.getElementById('terminal-status');
+        const reconnectBtn = document.getElementById('reconnect-btn');
+        let ws = null;
+
+        function connect() {
+            reconnectBtn.style.display = 'none';
+            statusEl.className = 'status connecting';
+            statusEl.textContent = 'Connecting...';
+
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            // Connect to main ClickDep WebSocket (on the base domain)
+            const baseDomain = host.split('.').slice(1).join('.'); // strip subdomain
+            ws = new WebSocket(`${proto}://${baseDomain}`);
+
+            ws.onopen = () => {
+                statusEl.className = 'status';
+                statusEl.textContent = 'Connected';
+
+                // First we need to find the VPS ID from name
+                fetch(`https://${baseDomain}/api/vps`)
+                    .then(r => r.json())
+                    .then(vpsList => {
+                        const vps = vpsList.find(v => v.name === vpsName);
+                        if (!vps) {
+                            term.writeln('\r\n\x1b[31mError: VPS not found\x1b[0m');
+                            return;
+                        }
+
+                        // Start terminal session
+                        ws.send(JSON.stringify({
+                            type: 'vps_terminal_start',
+                            vpsId: vps.id,
+                            cols: term.cols,
+                            rows: term.rows,
+                        }));
+                    })
+                    .catch(e => {
+                        term.writeln(`\r\n\x1b[31mError: ${e.message}\x1b[0m`);
+                    });
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'vps_terminal_ready') {
+                        term.focus();
+                    } else if (msg.type === 'vps_terminal_data') {
+                        const bytes = Uint8Array.from(atob(msg.data), c => c.charCodeAt(0));
+                        term.write(bytes);
+                    } else if (msg.type === 'vps_terminal_exit') {
+                        term.writeln('\r\n\x1b[33mSession ended\x1b[0m');
+                        reconnectBtn.style.display = 'block';
+                    } else if (msg.type === 'vps_terminal_error') {
+                        term.writeln(`\r\n\x1b[31mError: ${msg.error}\x1b[0m`);
+                        reconnectBtn.style.display = 'block';
+                    }
+                } catch (e) { }
+            };
+
+            ws.onclose = () => {
+                statusEl.className = 'status error';
+                statusEl.textContent = 'Disconnected';
+                reconnectBtn.style.display = 'block';
+            };
+
+            ws.onerror = () => {
+                statusEl.className = 'status error';
+                statusEl.textContent = 'Connection Error';
+            };
+
+            // Send terminal input to server
+            term.onData((data) => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'vps_terminal_input',
+                        data: btoa(data),
+                    }));
+                }
+            });
+
+            // Send resize events
+            term.onResize(({ cols, rows }) => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'vps_terminal_resize',
+                        cols, rows,
+                    }));
+                }
+            });
+        }
+
+        connect();
+    </script>
+</body>
+
+</html>
