@@ -81,8 +81,10 @@ app.use((req, res, next) => {
         if (vps.status !== 'running') {
             return res.status(503).send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>503</h1><p>VPS <b>${vps.name}</b> is <b>${vps.status}</b>.</p></body></html>`);
         }
-        // Serve standalone terminal HTML
-        return res.sendFile(path.join(__dirname, 'public', 'terminal.html'));
+        // Serve standalone terminal HTML with injected details
+        let html = fs.readFileSync(path.join(__dirname, 'public', 'terminal.html'), 'utf8');
+        html = html.replace('</head>', `<script>window.__VPS_ID__ = "${vps.id}";</script></head>`);
+        return res.send(html);
     }
 
     // Website project subdomain
