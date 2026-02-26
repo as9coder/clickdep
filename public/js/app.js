@@ -99,7 +99,8 @@ window.App = {
             n.classList.toggle('active',
                 n.getAttribute('href') === hash ||
                 (hash.startsWith('#/project') && n.dataset.page === 'dashboard') ||
-                (hash.startsWith('#/vps') && n.dataset.page === 'vps')
+                (hash.startsWith('#/vps') && n.dataset.page === 'vps') ||
+                (hash.startsWith('#/cron') && n.dataset.page === 'cron')
             );
         });
 

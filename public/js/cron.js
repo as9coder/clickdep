@@ -1,7 +1,6 @@
 const CronViews = {
     // ─── LIST VIEW ──────────────────────────────
     async list(container) {
-        App.updateActiveNav('cron');
         container.innerHTML = `<div class="p-6 text-center text-muted">Loading Cron Jobs...</div>`;
 
         const jobs = await API.get('/api/cron');
@@ -57,7 +56,6 @@ const CronViews = {
 
     // ─── CREATE VIEW ────────────────────────────
     async create(container) {
-        App.updateActiveNav('cron');
 
         // Fetch projects and vps to populate container dropdown
         const [projects, vpsList] = await Promise.all([
@@ -229,7 +227,6 @@ const CronViews = {
 
     // ─── DETAIL VIEW ────────────────────────────
     async detail(container, jobId) {
-        App.updateActiveNav('cron');
 
         let job;
         let logs = [];
