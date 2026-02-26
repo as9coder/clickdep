@@ -66,6 +66,11 @@ app.use((req, res, next) => {
     const subdomain = extractSubdomain(req.headers.host);
     if (!subdomain) return next(); // no subdomain — serve dashboard
 
+    // Let static files and API requests through
+    if (req.path.startsWith('/api/') || req.path.startsWith('/css/') || req.path.startsWith('/js/')) {
+        return next();
+    }
+
     // VPS terminal subdomain: namevps.clickdep.dev
     if (subdomain.endsWith('vps')) {
         const vpsName = subdomain.slice(0, -3); // strip 'vps' suffix

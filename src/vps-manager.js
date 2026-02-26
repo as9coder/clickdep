@@ -70,13 +70,23 @@ async function createVPS(vpsId, opts = {}) {
         });
     }
 
+    // Determine OS family for sudo installation
+    const osFamily = osImage.split(':')[0];
+    const baseSetup = {
+        'ubuntu': 'if ! command -v sudo > /dev/null; then apt-get update && apt-get install -y sudo curl wget nano; fi',
+        'debian': 'if ! command -v sudo > /dev/null; then apt-get update && apt-get install -y sudo curl wget nano; fi',
+        'alpine': 'if ! command -v sudo > /dev/null; then apk add --no-cache sudo curl wget nano bash; fi',
+        'centos': 'if ! command -v sudo > /dev/null; then dnf install -y sudo curl wget nano; fi',
+    }[osFamily] || '';
+
     // Build env array
     const envArr = Object.entries(envVars).map(([k, v]) => `${k}=${v}`);
     envArr.push('TERM=xterm-256color');
 
-    // Startup command: keep container alive + run startup script
-    const startCmd = startupScript
-        ? `bash -c "${startupScript.replace(/"/g, '\\"')} && sleep infinity"`
+    // Startup command: install sudo -> run userscript -> keep alive
+    const combinedScript = [baseSetup, startupScript].filter(Boolean).join(' ; ');
+    const startCmd = combinedScript
+        ? `sh -c "${combinedScript.replace(/"/g, '\\"')} ; sleep infinity"`
         : 'sleep infinity';
 
     // Port bindings for forwarded ports

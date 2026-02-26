@@ -181,8 +181,8 @@
                 statusEl.className = 'status';
                 statusEl.textContent = 'Connected';
 
-                // First we need to find the VPS ID from name
-                fetch(`https://${baseDomain}/api/vps`)
+                // Fetch VPS details using a relative path — subdomain proxy now bypasses /api/
+                fetch('/api/vps')
                     .then(r => r.json())
                     .then(vpsList => {
                         const vps = vpsList.find(v => v.name === vpsName);
