@@ -75,7 +75,7 @@ const BucketViews = {
                                 <div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px" title="${f.original_name}">${f.original_name}</div>
                                 <div style="display:flex;align-items:center;justify-content:space-between">
                                     <span class="text-xs text-muted">${formatSize(f.file_size)}</span>
-                                    <span class="text-xs text-muted">${App.timeAgo(f.created_at)}</span>
+                                    <span class="text-xs text-muted">${timeAgo(f.created_at)}</span>
                                 </div>
                                 <div style="display:flex;gap:6px;margin-top:8px">
                                     <button class="btn btn-ghost copy-link-btn" style="flex:1;padding:4px 8px;font-size:0.75rem" data-url="${f.embed_url}">📋 Copy Link</button>

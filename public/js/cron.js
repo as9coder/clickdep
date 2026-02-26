@@ -45,7 +45,7 @@ const CronViews = {
               </div>
               <div style="display:flex;gap:12px;margin-top:auto;padding-top:12px;border-top:1px dashed var(--border)">
                 <span class="text-xs text-muted">Total Runs: ${j.total_runs}</span>
-                <span class="text-xs text-muted">${j.last_run_time ? 'Last run: ' + App.timeAgo(j.last_run_time) : 'Never run'}</span>
+                <span class="text-xs text-muted">${j.last_run_time ? 'Last run: ' + timeAgo(j.last_run_time) : 'Never run'}</span>
               </div>
             </a>
           `).join('')}
