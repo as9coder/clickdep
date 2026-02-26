@@ -116,6 +116,13 @@ window.App = {
             await Views.activity(container);
         } else if (hash === '#/settings') {
             await Views.settings(container);
+        } else if (hash === '#/cron') {
+            await CronViews.list(container);
+        } else if (hash === '#/cron/new') {
+            await CronViews.create(container);
+        } else if (hash.startsWith('#/cron/')) {
+            const id = hash.replace('#/cron/', '');
+            await CronViews.detail(container, id);
         } else if (hash === '#/vps') {
             await VPSViews.list(container);
         } else if (hash === '#/vps/new') {
@@ -138,6 +145,8 @@ window.App = {
             { name: 'Dashboard', desc: 'View all projects', icon: '📊', action: () => location.hash = '#/' },
             { name: 'New Deploy', desc: 'Deploy a new project', icon: '🚀', action: () => location.hash = '#/new', shortcut: 'Ctrl+N' },
             { name: 'System Monitor', desc: 'View system stats', icon: '📈', action: () => location.hash = '#/monitor' },
+            { name: 'VPS', desc: 'Manage Virtual Servers', icon: '🖥️', action: () => location.hash = '#/vps' },
+            { name: 'Cron Jobs', desc: 'Manage automated tasks', icon: '⏱️', action: () => location.hash = '#/cron' },
             { name: 'Activity', desc: 'View deploy history', icon: '🕐', action: () => location.hash = '#/activity' },
             { name: 'Settings', desc: 'App configuration', icon: '⚙️', action: () => location.hash = '#/settings' },
         ];

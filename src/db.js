@@ -139,10 +139,39 @@ db.exec(`
     tags TEXT DEFAULT '[]'
   );
 
+  CREATE TABLE IF NOT EXISTS cron_jobs (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    schedule TEXT NOT NULL,
+    target_type TEXT NOT NULL,
+    target_url TEXT,
+    http_method TEXT DEFAULT 'GET',
+    http_headers TEXT DEFAULT '{}',
+    http_body TEXT,
+    container_id TEXT,
+    container_cmd TEXT,
+    retries INTEGER DEFAULT 0,
+    timeout_ms INTEGER DEFAULT 10000,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS cron_logs (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    output TEXT,
+    duration_ms INTEGER,
+    executed_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE
+  );
+
   CREATE INDEX IF NOT EXISTS idx_deployments_project ON deployments(project_id);
   CREATE INDEX IF NOT EXISTS idx_metrics_project ON metrics_snapshots(project_id);
   CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
   CREATE INDEX IF NOT EXISTS idx_vps_name ON vps_instances(name);
+  CREATE INDEX IF NOT EXISTS idx_cron_logs_job ON cron_logs(job_id);
 `);
 
 // Prepared statements
@@ -221,6 +250,20 @@ const stmts = {
   getRunningVPS: db.prepare(`SELECT * FROM vps_instances WHERE status = 'running'`),
   countVPS: db.prepare(`SELECT COUNT(*) as count FROM vps_instances`),
   countRunningVPS: db.prepare(`SELECT COUNT(*) as count FROM vps_instances WHERE status = 'running'`),
+
+  // Supreme Cron
+  getAllCronJobs: db.prepare(`SELECT * FROM cron_jobs ORDER BY created_at DESC`),
+  getActiveCronJobs: db.prepare(`SELECT * FROM cron_jobs WHERE is_active = 1`),
+  getCronJob: db.prepare(`SELECT * FROM cron_jobs WHERE id = ?`),
+  insertCronJob: db.prepare(`INSERT INTO cron_jobs (id, name, schedule, target_type, target_url, http_method, http_headers, http_body, container_id, container_cmd, retries, timeout_ms, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  updateCronJob: db.prepare(`UPDATE cron_jobs SET name=?, schedule=?, target_type=?, target_url=?, http_method=?, http_headers=?, http_body=?, container_id=?, container_cmd=?, retries=?, timeout_ms=?, is_active=?, updated_at=datetime('now') WHERE id=?`),
+  toggleCronJob: db.prepare(`UPDATE cron_jobs SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END, updated_at=datetime('now') WHERE id=?`),
+  deleteCronJob: db.prepare(`DELETE FROM cron_jobs WHERE id=?`),
+
+  insertCronLog: db.prepare(`INSERT INTO cron_logs (id, job_id, status, output, duration_ms) VALUES (?, ?, ?, ?, ?)`),
+  getCronLogs: db.prepare(`SELECT * FROM cron_logs WHERE job_id = ? ORDER BY executed_at DESC LIMIT 100`),
+  getRecentCronLogs: db.prepare(`SELECT cl.*, cj.name as job_name FROM cron_logs cl JOIN cron_jobs cj ON cl.job_id = cj.id ORDER BY cl.executed_at DESC LIMIT 50`),
+  pruneCronLogs: db.prepare(`DELETE FROM cron_logs WHERE executed_at < datetime('now', '-30 days')`),
 };
 
 module.exports = { db, stmts, DATA_DIR, DB_PATH };

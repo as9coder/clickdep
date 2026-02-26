@@ -6,6 +6,7 @@ const fs = require('fs');
 const { stmts } = require('./src/db');
 const dockerMgr = require('./src/docker-manager');
 const vpsMgr = require('./src/vps-manager');
+const cronMgr = require('./src/cron-manager');
 const github = require('./src/github');
 
 const app = express();
@@ -271,6 +272,7 @@ const systemRoutes = require('./src/routes/system');
 const authRoutes = require('./src/routes/auth');
 const webhookRoutes = require('./src/routes/webhooks');
 const vpsRoutes = require('./src/routes/vps');
+const cronRoutes = require('./src/routes/cron');
 
 // Attach broadcast to routes that need it
 projectRoutes.setBroadcast(broadcast);
@@ -283,6 +285,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/vps', vpsRoutes);
+app.use('/api/cron', cronRoutes);
 
 // SPA fallback
 app.get('*', (req, res) => {
@@ -351,6 +354,9 @@ async function start() {
 
     // Start auto-watcher (works for public repos even without token)
     github.startWatcher();
+
+    // Start Supreme Cron
+    cronMgr.startAll();
 
     server.listen(PORT, () => {
         console.log('');
