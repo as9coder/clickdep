@@ -85,7 +85,7 @@ const CronViews = {
         </div>
 
         <div class="form-group">
-          <label>Schedule (Cron Expression)</label>
+          <label>When to Execute (Cron Expression)</label>
           <div style="display:flex;gap:12px;margin-bottom:8px">
               <select id="preset-schedule" class="form-select" style="width:200px">
                   <option value="custom">Custom Expression</option>
@@ -94,9 +94,9 @@ const CronViews = {
                   <option value="0 * * * *">Every Hour</option>
                   <option value="0 0 * * *">Every Day at Midnight</option>
               </select>
-              <input type="text" id="job-schedule" value="* * * * *" style="flex:1;font-family:var(--mono)" required>
+              <input type="text" id="job-schedule" value="* * * * *" style="flex:1;font-family:var(--mono);font-size:1.1rem;padding:8px" required>
           </div>
-          <small class="text-muted">Format: Minute Hour Day Month DayOfWeek</small>
+          <small class="text-muted">Format: <code>Minute Hour Day Month DayOfWeek</code> (e.g. <code>0 12 * * *</code> for Noon daily). Use <a href="https://crontab.guru/" target="_blank" style="color:var(--primary)">crontab.guru</a> for help.</small>
         </div>
 
         <div class="form-group">
