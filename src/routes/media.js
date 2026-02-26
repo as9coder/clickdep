@@ -73,7 +73,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
 
         res.json({
             ...media,
-            embed_url: baseDomain ? `https://${slug}.${baseDomain}` : slug
+            embed_url: baseDomain ? `https://${slug}.${baseDomain}/${encodeURIComponent(req.file.originalname)}` : slug
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -107,7 +107,7 @@ router.get('/', (req, res) => {
 
         const enriched = files.map(f => ({
             ...f,
-            embed_url: baseDomain ? `https://${f.slug}.${baseDomain}` : f.slug
+            embed_url: baseDomain ? `https://${f.slug}.${baseDomain}/${encodeURIComponent(f.original_name)}` : f.slug
         }));
 
         res.json({ files: enriched, stats });

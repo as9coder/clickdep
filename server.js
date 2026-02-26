@@ -94,78 +94,18 @@ app.use((req, res, next) => {
         const mediaDir = path.join(__dirname, 'data', 'media');
         const filePath = path.join(mediaDir, mediaFile.file_path);
 
-        // /raw → serve the actual binary file
-        if (req.path === '/raw') {
-            if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
-            res.setHeader('Content-Type', mediaFile.mime_type);
-            res.setHeader('Content-Length', mediaFile.file_size);
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            return fs.createReadStream(filePath).pipe(res);
-        }
+        if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
 
-        // Root → serve OG embed page for bots + preview page for humans
-        const isVideo = mediaFile.mime_type.startsWith('video/');
-        const rawUrl = `https://${subdomain}.${getBaseDomain()}/raw`;
-        const sizeKB = Math.round(mediaFile.file_size / 1024);
-        const sizeLabel = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+        // Always serve the actual binary file directly with the right headers.
+        // This ensures browsers just show the native image/video player, 
+        // and Discord natively embeds the un-wrapped media perfectly.
+        res.setHeader('Content-Type', mediaFile.mime_type);
+        res.setHeader('Content-Length', mediaFile.file_size);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(mediaFile.original_name)}"`);
 
-        let ogTags = '';
-        if (isVideo) {
-            ogTags = `
-                <meta property="og:type" content="video.other">
-                <meta property="og:video" content="${rawUrl}">
-                <meta property="og:video:type" content="${mediaFile.mime_type}">
-                <meta property="og:video:width" content="1280">
-                <meta property="og:video:height" content="720">
-                <meta property="og:image" content="${rawUrl}">
-            `;
-        } else {
-            ogTags = `
-                <meta property="og:type" content="website">
-                <meta property="og:image" content="${rawUrl}">
-                <meta property="og:image:type" content="${mediaFile.mime_type}">
-            `;
-        }
-
-        return res.send(`<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>${mediaFile.original_name} — ClickDep</title>
-    <meta property="og:title" content="${mediaFile.original_name}">
-    <meta property="og:description" content="${sizeLabel} • Hosted on ClickDep">
-    <meta property="og:url" content="https://${subdomain}.${getBaseDomain()}">
-    <meta property="og:site_name" content="ClickDep">
-    ${ogTags}
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="${rawUrl}">
-    <meta name="theme-color" content="#6c5ce7">
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:#0a0a0f; color:#e0e0e0; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-               display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
-        .container { text-align:center; max-width:900px; width:100%; }
-        img, video { max-width:100%; max-height:75vh; border-radius:12px;
-                     box-shadow:0 8px 40px rgba(108,92,231,0.3); }
-        .meta { margin-top:20px; opacity:0.6; font-size:14px; }
-        .meta a { color:#6c5ce7; text-decoration:none; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        ${isVideo
-                ? `<video src="${rawUrl}" controls autoplay muted playsinline style="width:100%"></video>`
-                : `<img src="${rawUrl}" alt="${mediaFile.original_name}">`
-            }
-        <div class="meta">
-            ${mediaFile.original_name} · ${sizeLabel} ·
-            <a href="${rawUrl}" download>Download</a> ·
-            <a href="https://${getBaseDomain()}">ClickDep</a>
-        </div>
-    </div>
-</body>
-</html>`);
+        return fs.createReadStream(filePath).pipe(res);
     }
 
     // Website project subdomain
