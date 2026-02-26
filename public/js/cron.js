@@ -158,6 +158,16 @@ const CronViews = {
                 <label>Timeout (ms)</label>
                 <input type="number" id="job-timeout" value="10000" min="1000">
             </div>
+            <div class="form-group" style="flex:1">
+                <label>Timezone</label>
+                <input type="text" id="job-timezone" value="UTC" placeholder="e.g. America/New_York">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Failure Webhook URL (Optional)</label>
+            <input type="url" id="job-webhook" placeholder="https://discord.com/api/webhooks/...">
+            <small class="text-muted">Fires a POST request when all retries are exhausted.</small>
         </div>
 
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
@@ -198,8 +208,10 @@ const CronViews = {
                 name: container.querySelector('#job-name').value.trim(),
                 schedule: container.querySelector('#job-schedule').value.trim(),
                 target_type: container.querySelector('input[name="target_type"]:checked').value,
-                retries: parseInt(container.querySelector('#job-retries').value),
-                timeout_ms: parseInt(container.querySelector('#job-timeout').value),
+                retries: parseInt(container.querySelector('#job-retries').value) || 0,
+                timeout_ms: parseInt(container.querySelector('#job-timeout').value) || 10000,
+                timezone: container.querySelector('#job-timezone').value.trim() || 'UTC',
+                failure_webhook: container.querySelector('#job-webhook').value.trim(),
                 is_active: true
             };
 
@@ -276,7 +288,7 @@ const CronViews = {
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <div>
                         <div class="text-xs text-muted uppercase">Schedule</div>
-                        <div style="font-family:var(--mono)">${job.schedule}</div>
+                        <div style="font-family:var(--mono)">${job.schedule} (${job.timezone || 'UTC'})</div>
                     </div>
                     <div>
                         <div class="text-xs text-muted uppercase">Target</div>
@@ -292,6 +304,12 @@ const CronViews = {
                         <div class="text-xs text-muted uppercase">Retries</div>
                         <div>${job.retries} attempts</div>
                     </div>
+                    ${job.failure_webhook ? `
+                    <div>
+                        <div class="text-xs text-muted uppercase">Failure Webhook</div>
+                        <div style="font-family:var(--mono);word-break:break-all;font-size:0.85rem">${job.failure_webhook}</div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
 

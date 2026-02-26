@@ -27,7 +27,10 @@ class CronManager {
         if (!jobData.is_active) return;
 
         try {
-            const job = croner(jobData.schedule, { catch: true }, async () => {
+            const options = { catch: true };
+            if (jobData.timezone) options.timezone = jobData.timezone;
+
+            const job = croner(jobData.schedule, options, async () => {
                 await this.executeJob(jobData.id);
             });
             this.jobs.set(jobData.id, job);
@@ -73,10 +76,14 @@ class CronManager {
         stmts.insertCronLog.run(logId, jobId, status, output.substring(0, 10000), duration); // keep logs reasonable
 
         // Retry logic
-        if (status === 'failed' && attempt <= job.retries) {
-            setTimeout(() => {
-                this.executeJob(jobId, attempt + 1);
-            }, 30000); // 30s delay between retries
+        if (status === 'failed') {
+            if (attempt <= job.retries) {
+                setTimeout(() => {
+                    this.executeJob(jobId, attempt + 1);
+                }, 30000); // 30s delay between retries
+            } else if (job.failure_webhook) {
+                this.fireFailureWebhook(job, output);
+            }
         }
     }
 
@@ -156,6 +163,20 @@ class CronManager {
             };
         } catch (e) {
             return { success: false, output: `Container execution failed: ${e.message}` };
+        }
+    }
+
+    async fireFailureWebhook(job, output) {
+        try {
+            await fetch(job.failure_webhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: `🚨 **Cron Job Failed:** \`${job.name}\`\n**Target:** \`${job.target_type}\`\n**Output:**\n\`\`\`\n${output.substring(0, 1000)}\n\`\`\``
+                })
+            });
+        } catch (e) {
+            console.error(`[Cron] Failure webhook delivery failed for ${job.name}:`, e.message);
         }
     }
 }

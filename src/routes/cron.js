@@ -39,7 +39,7 @@ router.post('/', (req, res) => {
             name, schedule, target_type, target_url,
             http_method, http_headers, http_body,
             container_id, container_cmd,
-            retries, timeout_ms, is_active
+            retries, timeout_ms, timezone, failure_webhook, is_active
         } = req.body;
 
         if (!name || !schedule || !target_type) {
@@ -50,7 +50,7 @@ router.post('/', (req, res) => {
             id, name, schedule, target_type, target_url || null,
             http_method || 'GET', http_headers || '{}', http_body || null,
             container_id || null, container_cmd || null,
-            retries || 0, timeout_ms || 10000, is_active === false ? 0 : 1
+            retries || 0, timeout_ms || 10000, timezone || 'UTC', failure_webhook || null, is_active === false ? 0 : 1
         );
 
         const job = stmts.getCronJob.get(id);
@@ -73,7 +73,7 @@ router.put('/:id', (req, res) => {
             d.name, d.schedule, d.target_type, d.target_url,
             d.http_method, d.http_headers, d.http_body,
             d.container_id, d.container_cmd,
-            d.retries, d.timeout_ms, d.is_active === false ? 0 : 1,
+            d.retries, d.timeout_ms, d.timezone || 'UTC', d.failure_webhook || null, d.is_active === false ? 0 : 1,
             job.id
         );
 
