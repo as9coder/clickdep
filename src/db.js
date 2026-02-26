@@ -8,6 +8,7 @@ const DB_PATH = path.join(DATA_DIR, 'clickdep.db');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(path.join(DATA_DIR, 'projects'))) fs.mkdirSync(path.join(DATA_DIR, 'projects'), { recursive: true });
 if (!fs.existsSync(path.join(DATA_DIR, 'backups'))) fs.mkdirSync(path.join(DATA_DIR, 'backups'), { recursive: true });
+if (!fs.existsSync(path.join(DATA_DIR, 'media'))) fs.mkdirSync(path.join(DATA_DIR, 'media'), { recursive: true });
 
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
@@ -174,6 +175,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
   CREATE INDEX IF NOT EXISTS idx_vps_name ON vps_instances(name);
   CREATE INDEX IF NOT EXISTS idx_cron_logs_job ON cron_logs(job_id);
+
+  CREATE TABLE IF NOT EXISTS media_files (
+    id TEXT PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    original_name TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    file_size INTEGER DEFAULT 0,
+    file_path TEXT NOT NULL,
+    bucket_type TEXT DEFAULT 'embed',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_media_slug ON media_files(slug);
 `);
 
 // Gracefully add columns to existing tables if they don't exist
@@ -270,6 +283,14 @@ const stmts = {
   getCronLogs: db.prepare(`SELECT * FROM cron_logs WHERE job_id = ? ORDER BY executed_at DESC LIMIT 100`),
   getRecentCronLogs: db.prepare(`SELECT cl.*, cj.name as job_name FROM cron_logs cl JOIN cron_jobs cj ON cl.job_id = cj.id ORDER BY cl.executed_at DESC LIMIT 50`),
   pruneCronLogs: db.prepare(`DELETE FROM cron_logs WHERE executed_at < datetime('now', '-30 days')`),
+
+  // Media / Embed Buckets
+  getAllMedia: db.prepare(`SELECT * FROM media_files ORDER BY created_at DESC`),
+  getMediaById: db.prepare(`SELECT * FROM media_files WHERE id = ?`),
+  getMediaBySlug: db.prepare(`SELECT * FROM media_files WHERE slug = ?`),
+  insertMedia: db.prepare(`INSERT INTO media_files (id, slug, original_name, mime_type, file_size, file_path, bucket_type) VALUES (?, ?, ?, ?, ?, ?, ?)`),
+  deleteMedia: db.prepare(`DELETE FROM media_files WHERE id = ?`),
+  countMedia: db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_size FROM media_files`),
 };
 
 module.exports = { db, stmts, DATA_DIR, DB_PATH };

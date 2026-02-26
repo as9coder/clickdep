@@ -100,7 +100,8 @@ window.App = {
                 n.getAttribute('href') === hash ||
                 (hash.startsWith('#/project') && n.dataset.page === 'dashboard') ||
                 (hash.startsWith('#/vps') && n.dataset.page === 'vps') ||
-                (hash.startsWith('#/cron') && n.dataset.page === 'cron')
+                (hash.startsWith('#/cron') && n.dataset.page === 'cron') ||
+                (hash.startsWith('#/bucket') && n.dataset.page === 'buckets')
             );
         });
 
@@ -131,6 +132,8 @@ window.App = {
         } else if (hash.startsWith('#/vps/')) {
             const id = hash.replace('#/vps/', '');
             await VPSViews.detail(container, id);
+        } else if (hash === '#/buckets') {
+            await BucketViews.list(container);
         } else {
             container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">404</div><h2>Page not found</h2><a href="#/" class="btn btn-primary">Go Home</a></div>';
         }
@@ -148,6 +151,7 @@ window.App = {
             { name: 'System Monitor', desc: 'View system stats', icon: '📈', action: () => location.hash = '#/monitor' },
             { name: 'VPS', desc: 'Manage Virtual Servers', icon: '🖥️', action: () => location.hash = '#/vps' },
             { name: 'Cron Jobs', desc: 'Manage automated tasks', icon: '⏱️', action: () => location.hash = '#/cron' },
+            { name: 'Buckets', desc: 'Upload & embed media files', icon: '📎', action: () => location.hash = '#/buckets' },
             { name: 'Activity', desc: 'View deploy history', icon: '🕐', action: () => location.hash = '#/activity' },
             { name: 'Settings', desc: 'App configuration', icon: '⚙️', action: () => location.hash = '#/settings' },
         ];
