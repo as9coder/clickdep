@@ -1,15 +1,59 @@
 const vm = require('vm');
 const crypto = require('crypto');
 const { stmts } = require('./db');
+const { decrypt } = require('./crypto-util');
+
+// Blocked response headers that functions must not be allowed to set
+const BLOCKED_HEADERS = new Set([
+    'set-cookie', 'x-powered-by', 'server',
+    'x-frame-options', 'content-security-policy',
+    'strict-transport-security', 'x-content-type-options',
+    'access-control-allow-origin', // We set this ourselves
+]);
+
+// Simple in-memory rate limiter per function: max 60 requests per second
+const rateLimitMap = new Map();
+function isRateLimited(fnId) {
+    const now = Date.now();
+    const windowMs = 1000;
+    const max = 60;
+
+    if (!rateLimitMap.has(fnId)) {
+        rateLimitMap.set(fnId, { count: 1, windowStart: now });
+        return false;
+    }
+
+    const state = rateLimitMap.get(fnId);
+    if (now - state.windowStart > windowMs) {
+        state.count = 1;
+        state.windowStart = now;
+        return false;
+    }
+
+    state.count++;
+    return state.count > max;
+}
 
 class FunctionEngine {
     /**
      * Execute a serverless function in a sandboxed VM context.
      * @param {Object} func - The function record from DB
      * @param {Object} request - Parsed HTTP request object
-     * @returns {{ status: number, headers: Object, body: string, consoleLogs: string, error: string|null, durationMs: number }}
+     * @returns {{ status, headers, body, consoleLogs, error, durationMs }}
      */
     async execute(func, request) {
+        // Rate limiting (60 req/s per function)
+        if (isRateLimited(func.id)) {
+            return {
+                status: 429,
+                headers: { 'Content-Type': 'application/json', 'Retry-After': '1' },
+                body: JSON.stringify({ error: 'Too Many Requests. Limit: 60 req/s.' }),
+                consoleLogs: '',
+                error: 'Rate limit exceeded',
+                durationMs: 0
+            };
+        }
+
         const startTime = Date.now();
         const consoleLogs = [];
         let error = null;
@@ -18,22 +62,26 @@ class FunctionEngine {
         let responseBody = '';
 
         try {
-            // Parse env vars
+            // Decrypt env vars at execution time (never at rest in the engine)
             let envVars = {};
-            try { envVars = JSON.parse(func.env_vars || '{}'); } catch (e) { }
+            try {
+                const rawEnv = decrypt(func.env_vars || '{}');
+                envVars = JSON.parse(rawEnv || '{}');
+            } catch (e) { }
 
             // Build the request object exposed to user code
-            const REQUEST = {
+            const REQUEST = Object.freeze({
                 method: request.method,
                 url: request.url || '/',
                 path: request.path || '/',
-                headers: request.headers || {},
-                query: request.query || {},
+                headers: Object.freeze({ ...request.headers }),
+                query: Object.freeze({ ...request.query }),
                 body: request.body || null,
-                env: envVars
-            };
+                env: Object.freeze(envVars) // env vars decrypted only here, inside the sandbox boundary
+            });
 
-            // Create sandboxed context with curated globals
+            // Carefully curate the sandbox — use primitive copies where possible
+            // to prevent prototype chain escape
             const sandbox = {
                 REQUEST,
                 console: {
@@ -43,8 +91,20 @@ class FunctionEngine {
                     info: (...args) => consoleLogs.push('[INFO] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
                 },
                 fetch: globalThis.fetch,
-                JSON,
-                Math,
+                JSON: {
+                    parse: JSON.parse.bind(JSON),
+                    stringify: JSON.stringify.bind(JSON)
+                },
+                Math: Object.freeze({
+                    ...Math,
+                    random: Math.random.bind(Math),
+                    floor: Math.floor.bind(Math), ceil: Math.ceil.bind(Math),
+                    round: Math.round.bind(Math), abs: Math.abs.bind(Math),
+                    min: Math.min.bind(Math), max: Math.max.bind(Math),
+                    sqrt: Math.sqrt.bind(Math), pow: Math.pow.bind(Math),
+                    log: Math.log.bind(Math), log2: Math.log2.bind(Math),
+                    PI: Math.PI, E: Math.E
+                }),
                 Date,
                 parseInt,
                 parseFloat,
@@ -61,9 +121,17 @@ class FunctionEngine {
                 TextDecoder,
                 btoa: globalThis.btoa || ((s) => Buffer.from(s).toString('base64')),
                 atob: globalThis.atob || ((s) => Buffer.from(s, 'base64').toString()),
-                crypto: { randomUUID: () => crypto.randomUUID() },
-                Array, Object, String, Number, Boolean, Set, Map, RegExp, Error, Promise,
-                setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms, func.timeout_ms || 10000)),
+                // Restricted crypto — only randomUUID, no key generation or hashing of secrets
+                crypto: Object.freeze({ randomUUID: () => crypto.randomUUID() }),
+                // Safe constructors
+                Array, String, Number, Boolean, Set, Map, RegExp,
+                // Error — expose but disarm the dangerous prepareStackTrace escape
+                Error: class SafeError extends Error {
+                    constructor(msg) { super(msg); Object.freeze(this); }
+                    static prepareStackTrace() { return ''; } // block V8 internals access
+                },
+                Promise,
+                setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms || 0, func.timeout_ms || 10000)),
                 clearTimeout,
                 __RESULT__: null,
                 __ERROR__: null,
@@ -71,14 +139,13 @@ class FunctionEngine {
 
             const context = vm.createContext(sandbox);
 
-            // Wrap user code: define handler, then call it
             const wrappedCode = `
                 ${func.code}
 
                 (async () => {
                     try {
                         if (typeof handler !== 'function') {
-                            __ERROR__ = 'No handler() function defined. Your code must export a handler(request) function.';
+                            __ERROR__ = 'No handler() function defined.';
                             return;
                         }
                         __RESULT__ = await handler(REQUEST);
@@ -93,10 +160,8 @@ class FunctionEngine {
                 timeout: func.timeout_ms || 10000
             });
 
-            // Execute the script — this resolves the outer async IIFE
             const asyncResult = script.runInContext(context);
 
-            // If it returns a promise (from the async IIFE), await it with timeout
             if (asyncResult && typeof asyncResult.then === 'function') {
                 await Promise.race([
                     asyncResult,
@@ -106,13 +171,11 @@ class FunctionEngine {
                 ]);
             }
 
-            // Check for errors
             if (sandbox.__ERROR__) {
                 error = sandbox.__ERROR__;
                 status = 500;
                 responseBody = JSON.stringify({ error: sandbox.__ERROR__ });
             } else {
-                // Normalize the result
                 const result = sandbox.__RESULT__;
 
                 if (result === null || result === undefined) {
@@ -123,13 +186,23 @@ class FunctionEngine {
                     responseHeaders['Content-Type'] = 'text/plain';
                     responseBody = result;
                 } else if (typeof result === 'object') {
-                    // Check if it's a full response object { status, headers, body }
-                    if (result.status || result.body || result.headers) {
+                    if (result.status || result.body !== undefined || result.headers) {
                         status = result.status || 200;
-                        if (result.headers) responseHeaders = { ...responseHeaders, ...result.headers };
-                        responseBody = typeof result.body === 'string' ? result.body : JSON.stringify(result.body || '');
+
+                        // Sanitize headers — block dangerous ones
+                        if (result.headers && typeof result.headers === 'object') {
+                            for (const [key, val] of Object.entries(result.headers)) {
+                                const lower = key.toLowerCase();
+                                if (!BLOCKED_HEADERS.has(lower)) {
+                                    responseHeaders[key] = String(val).substring(0, 1024); // limit header value length
+                                }
+                            }
+                        }
+
+                        responseBody = typeof result.body === 'string'
+                            ? result.body
+                            : JSON.stringify(result.body ?? '');
                     } else {
-                        // Auto-JSON wrap
                         status = 200;
                         responseBody = JSON.stringify(result);
                     }
@@ -140,19 +213,12 @@ class FunctionEngine {
             }
         } catch (e) {
             error = e.message || String(e);
-            status = 500;
-
-            if (e.message && e.message.includes('timed out')) {
-                status = 408;
-                responseBody = JSON.stringify({ error: `Function timed out after ${func.timeout_ms || 10000}ms` });
-            } else {
-                responseBody = JSON.stringify({ error: error });
-            }
+            status = e.message && e.message.includes('timed out') ? 408 : 500;
+            responseBody = JSON.stringify({ error });
         }
 
         const durationMs = Date.now() - startTime;
 
-        // Log the invocation
         try {
             const logId = crypto.randomUUID();
             stmts.insertFunctionLog.run(
@@ -160,9 +226,7 @@ class FunctionEngine {
                 status, durationMs, consoleLogs.join('\n').substring(0, 10000), error
             );
             stmts.incrementFunctionInvocations.run(func.id);
-        } catch (e) {
-            // Don't let logging failures break the response
-        }
+        } catch (e) { }
 
         return { status, headers: responseHeaders, body: responseBody, consoleLogs: consoleLogs.join('\n'), error, durationMs };
     }

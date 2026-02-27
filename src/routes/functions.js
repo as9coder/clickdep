@@ -3,6 +3,20 @@ const router = express.Router();
 const crypto = require('crypto');
 const { stmts } = require('../db');
 const fnEngine = require('../function-engine');
+const { encrypt, decrypt } = require('../crypto-util');
+
+// Strip env_vars from any function record before sending to client
+function sanitizeFn(fn) {
+    if (!fn) return fn;
+    const { env_vars, ...safe } = fn;
+    // Tell the client how many env vars are stored, but never reveal values
+    let envCount = 0;
+    try {
+        const raw = decrypt(env_vars || '{}');
+        envCount = Object.keys(JSON.parse(raw)).length;
+    } catch (e) { }
+    return { ...safe, env_vars_count: envCount, env_vars: '[encrypted]' };
+}
 
 function generateSlug(name) {
     const base = name.toLowerCase()
@@ -135,7 +149,7 @@ router.get('/meta/templates/:id', (req, res) => {
 router.get('/', (req, res) => {
     try {
         const fns = stmts.getAllFunctions.all();
-        res.json(fns);
+        res.json(fns.map(sanitizeFn));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -146,7 +160,19 @@ router.get('/:id', (req, res) => {
     try {
         const fn = stmts.getFunction.get(req.params.id);
         if (!fn) return res.status(404).json({ error: 'Function not found' });
-        res.json(fn);
+        res.json(sanitizeFn(fn));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get function env vars (plain-text, dashboard only — still protected by auth middleware)
+router.get('/:id/env', (req, res) => {
+    try {
+        const fn = stmts.getFunction.get(req.params.id);
+        if (!fn) return res.status(404).json({ error: 'Function not found' });
+        const decrypted = decrypt(fn.env_vars || '{}');
+        res.json({ env_vars: decrypted });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -178,13 +204,13 @@ router.post('/', (req, res) => {
         stmts.insertFunction.run(
             id, name.trim(), slug,
             code || TEMPLATES['hello-world'],
-            env_vars || '{}',
+            encrypt(env_vars || '{}'),   // AES-256-GCM encrypted
             timeout_ms || 10000,
             1
         );
 
         const fn = stmts.getFunction.get(id);
-        res.json(fn);
+        res.json(sanitizeFn(fn));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -197,10 +223,14 @@ router.put('/:id', (req, res) => {
         if (!fn) return res.status(404).json({ error: 'Function not found' });
 
         const d = { ...fn, ...req.body };
-        stmts.updateFunction.run(d.name, d.code, d.env_vars || '{}', d.timeout_ms || 10000, fn.id);
+        // Only re-encrypt env_vars if provided fresh (not the sentinel '[encrypted]')
+        const newEnvVars = (req.body.env_vars && req.body.env_vars !== '[encrypted]')
+            ? encrypt(req.body.env_vars)
+            : fn.env_vars;
+        stmts.updateFunction.run(d.name, d.code, newEnvVars, d.timeout_ms || 10000, fn.id);
 
         const updated = stmts.getFunction.get(fn.id);
-        res.json(updated);
+        res.json(sanitizeFn(updated));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -211,7 +241,7 @@ router.put('/:id/toggle', (req, res) => {
     try {
         stmts.toggleFunction.run(req.params.id);
         const fn = stmts.getFunction.get(req.params.id);
-        res.json(fn);
+        res.json(sanitizeFn(fn));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -233,7 +263,8 @@ router.post('/:id/test', async (req, res) => {
         };
 
         const result = await fnEngine.execute(fn, testRequest);
-        res.json(result);
+        // Never return env_vars in test results — only return safe execution data
+        res.json({ status: result.status, durationMs: result.durationMs, body: result.body, consoleLogs: result.consoleLogs, error: result.error });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

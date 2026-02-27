@@ -1,24 +1,24 @@
 const FunctionViews = {
-    // ─── LIST VIEW ──────────────────────────────
-    async list(container) {
-        container.innerHTML = `<div class="p-6 text-center text-muted">Loading Functions...</div>`;
+  // ─── LIST VIEW ──────────────────────────────
+  async list(container) {
+    container.innerHTML = `<div class="p-6 text-center text-muted">Loading Functions...</div>`;
 
-        let fns = [];
-        try { fns = await API.get('/api/functions'); } catch (e) { }
+    let fns = [];
+    try { fns = await API.get('/api/functions'); } catch (e) { }
 
-        const statusBadge = (fn) => {
-            if (!fn.is_active) return `<span class="badge" style="background:var(--bg-input)">Disabled</span>`;
-            return `<span class="badge" style="background:var(--green);color:white">Active</span>`;
-        };
+    const statusBadge = (fn) => {
+      if (!fn.is_active) return `<span class="badge" style="background:var(--bg-input)">Disabled</span>`;
+      return `<span class="badge" style="background:var(--green);color:white">Active</span>`;
+    };
 
-        // Build base domain
-        let baseDomain = '';
-        try {
-            const sys = await API.get('/api/system');
-            baseDomain = sys.base_domain || '';
-        } catch (e) { }
+    // Build base domain
+    let baseDomain = '';
+    try {
+      const sys = await API.get('/api/system');
+      baseDomain = sys.base_domain || '';
+    } catch (e) { }
 
-        container.innerHTML = `
+    container.innerHTML = `
       <div class="page-header">
         <h1>Functions</h1>
         <div class="page-header-actions">
@@ -53,11 +53,11 @@ const FunctionViews = {
         </div>
       `}
     `;
-    },
+  },
 
-    // ─── CREATE VIEW ────────────────────────────
-    async create(container) {
-        container.innerHTML = `
+  // ─── CREATE VIEW ────────────────────────────
+  async create(container) {
+    container.innerHTML = `
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:16px">
           <a href="#/functions" class="btn btn-ghost" style="padding:8px">←</a>
@@ -90,65 +90,72 @@ const FunctionViews = {
       </div>
     `;
 
-        // Slug preview
-        const nameInput = container.querySelector('#fn-name');
-        const slugPreview = container.querySelector('#slug-preview');
-        nameInput.addEventListener('input', () => {
-            const slug = nameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'your-function';
-            slugPreview.textContent = slug;
-        });
+    // Slug preview
+    const nameInput = container.querySelector('#fn-name');
+    const slugPreview = container.querySelector('#slug-preview');
+    nameInput.addEventListener('input', () => {
+      const slug = nameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'your-function';
+      slugPreview.textContent = slug;
+    });
 
-        // Create
-        container.querySelector('#create-btn').addEventListener('click', async () => {
-            const btn = container.querySelector('#create-btn');
-            const name = nameInput.value.trim();
-            if (!name) return App.toast('Name is required', 'error');
+    // Create
+    container.querySelector('#create-btn').addEventListener('click', async () => {
+      const btn = container.querySelector('#create-btn');
+      const name = nameInput.value.trim();
+      if (!name) return App.toast('Name is required', 'error');
 
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
 
-            try {
-                // Fetch template code
-                const templateId = container.querySelector('#fn-template').value;
-                let code = '';
-                try {
-                    const tmpl = await API.get(`/api/functions/meta/templates/${templateId}`);
-                    code = tmpl.code;
-                } catch (e) { code = '// Write your handler function here\nasync function handler(request) {\n    return { message: "Hello!" };\n}'; }
-
-                const fn = await API.post('/api/functions', { name, code });
-                App.toast('Function created!', 'success');
-                location.hash = `#/functions/${fn.id}`;
-            } catch (e) {
-                App.toast(e.message, 'error');
-                btn.disabled = false;
-                btn.textContent = 'Create & Open Editor';
-            }
-        });
-    },
-
-    // ─── EDITOR VIEW ────────────────────────────
-    async detail(container, fnId) {
-        let fn, logs = [];
+      try {
+        // Fetch template code
+        const templateId = container.querySelector('#fn-template').value;
+        let code = '';
         try {
-            fn = await API.get(`/api/functions/${fnId}`);
-            logs = await API.get(`/api/functions/${fnId}/logs`);
-        } catch (e) {
-            container.innerHTML = `<div class="page-header"><h1>Function Not Found</h1></div><a href="#/functions" class="btn btn-ghost">← Back</a>`;
-            return;
-        }
+          const tmpl = await API.get(`/api/functions/meta/templates/${templateId}`);
+          code = tmpl.code;
+        } catch (e) { code = '// Write your handler function here\nasync function handler(request) {\n    return { message: "Hello!" };\n}'; }
 
-        let baseDomain = '';
-        try {
-            const sys = await API.get('/api/system');
-            baseDomain = sys.base_domain || '';
-        } catch (e) { }
+        const fn = await API.post('/api/functions', { name, code });
+        App.toast('Function created!', 'success');
+        location.hash = `#/functions/${fn.id}`;
+      } catch (e) {
+        App.toast(e.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create & Open Editor';
+      }
+    });
+  },
 
-        const fnUrl = baseDomain ? `https://${fn.slug}.${baseDomain}` : fn.slug;
+  // ─── EDITOR VIEW ────────────────────────────
+  async detail(container, fnId) {
+    let fn, logs = [], envVarsPlain = '{}';
+    try {
+      [fn, logs] = await Promise.all([
+        API.get(`/api/functions/${fnId}`),
+        API.get(`/api/functions/${fnId}/logs`)
+      ]);
+      // Fetch decrypted env vars separately — never bundled into the main function GET
+      try {
+        const envData = await API.get(`/api/functions/${fnId}/env`);
+        envVarsPlain = envData.env_vars || '{}';
+      } catch (e) { envVarsPlain = '{}'; }
+    } catch (e) {
+      container.innerHTML = `<div class="page-header"><h1>Function Not Found</h1></div><a href="#/functions" class="btn btn-ghost">← Back</a>`;
+      return;
+    }
 
-        const renderLogs = () => {
-            if (logs.length === 0) return `<div class="text-muted" style="padding:16px;text-align:center">No invocations yet. Hit "Test" above to run your function.</div>`;
-            return logs.slice(0, 30).map(l => `
+    let baseDomain = '';
+    try {
+      const sys = await API.get('/api/system');
+      baseDomain = sys.base_domain || '';
+    } catch (e) { }
+
+    const fnUrl = baseDomain ? `https://${fn.slug}.${baseDomain}` : fn.slug;
+
+    const renderLogs = () => {
+      if (logs.length === 0) return `<div class="text-muted" style="padding:16px;text-align:center">No invocations yet. Hit "Test" above to run your function.</div>`;
+      return logs.slice(0, 30).map(l => `
                 <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;cursor:pointer" onclick="this.querySelector('.log-detail').style.display = this.querySelector('.log-detail').style.display === 'none' ? 'block' : 'none'">
                     <div style="display:flex;gap:12px;align-items:center">
                         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${(l.status_code >= 200 && l.status_code < 400) ? 'var(--green)' : 'var(--red)'}"></span>
@@ -165,10 +172,10 @@ const FunctionViews = {
 ${l.console_output ? '📋 Console:\n' + l.console_output + '\n' : ''}${l.error ? '❌ Error:\n' + l.error : '(No output)'}
                 </div>
             `).join('');
-        };
+    };
 
-        const render = () => {
-            container.innerHTML = `
+    const render = () => {
+      container.innerHTML = `
           <div class="page-header" style="margin-bottom:16px">
             <div style="display:flex;align-items:center;gap:16px">
               <a href="#/functions" class="btn btn-ghost" style="padding:8px">←</a>
@@ -220,9 +227,9 @@ ${l.console_output ? '📋 Console:\n' + l.console_output + '\n' : ''}${l.error 
 
               <!-- Env Vars -->
               <div class="settings-card" style="padding:12px">
-                <h4 style="margin-bottom:8px;font-size:0.85rem">Environment Variables</h4>
-                <textarea id="env-editor" rows="6" style="font-family:var(--mono);font-size:0.8rem;width:100%;resize:vertical" placeholder='{"API_KEY": "sk-..."}'>${fn.env_vars || '{}'}</textarea>
-                <small class="text-muted">JSON format. Access via request.env</small>
+                <h4 style="margin-bottom:8px;font-size:0.85rem">🔒 Environment Variables</h4>
+                <textarea id="env-editor" rows="6" style="font-family:var(--mono);font-size:0.8rem;width:100%;resize:vertical" placeholder='{"API_KEY": "sk-..."}'>${envVarsPlain}</textarea>
+                <small class="text-muted">AES-256-GCM encrypted at rest. Access via <code>request.env</code></small>
               </div>
 
               <!-- Test Panel -->
@@ -265,118 +272,118 @@ ${l.console_output ? '📋 Console:\n' + l.console_output + '\n' : ''}${l.error 
           </div>
         `;
 
-            // ─── Tab key support in editor ─────────
-            const editor = container.querySelector('#code-editor');
-            editor.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const start = editor.selectionStart;
-                    const end = editor.selectionEnd;
-                    editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
-                    editor.selectionStart = editor.selectionEnd = start + 4;
-                }
-            });
+      // ─── Tab key support in editor ─────────
+      const editor = container.querySelector('#code-editor');
+      editor.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = editor.selectionStart;
+          const end = editor.selectionEnd;
+          editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+          editor.selectionStart = editor.selectionEnd = start + 4;
+        }
+      });
 
-            // ─── Deploy ─────────
-            container.querySelector('#deploy-btn').addEventListener('click', async () => {
-                const btn = container.querySelector('#deploy-btn');
-                btn.disabled = true;
-                btn.textContent = 'Deploying...';
-                try {
-                    fn = await API.put(`/api/functions/${fnId}`, {
-                        code: editor.value,
-                        env_vars: container.querySelector('#env-editor').value.trim(),
-                        timeout_ms: parseInt(container.querySelector('#timeout-input').value) || 10000,
-                    });
-                    App.toast('Function deployed!', 'success');
-                } catch (e) { App.toast(e.message, 'error'); }
-                btn.disabled = false;
-                btn.textContent = '💾 Deploy';
-            });
+      // ─── Deploy ─────────
+      container.querySelector('#deploy-btn').addEventListener('click', async () => {
+        const btn = container.querySelector('#deploy-btn');
+        btn.disabled = true;
+        btn.textContent = 'Deploying...';
+        try {
+          fn = await API.put(`/api/functions/${fnId}`, {
+            code: editor.value,
+            env_vars: container.querySelector('#env-editor').value.trim(),
+            timeout_ms: parseInt(container.querySelector('#timeout-input').value) || 10000,
+          });
+          App.toast('Function deployed!', 'success');
+        } catch (e) { App.toast(e.message, 'error'); }
+        btn.disabled = false;
+        btn.textContent = '💾 Deploy';
+      });
 
-            // ─── Test ─────────
-            container.querySelector('#test-btn').addEventListener('click', async () => {
-                const btn = container.querySelector('#test-btn');
-                btn.disabled = true;
-                btn.textContent = 'Running...';
+      // ─── Test ─────────
+      container.querySelector('#test-btn').addEventListener('click', async () => {
+        const btn = container.querySelector('#test-btn');
+        btn.disabled = true;
+        btn.textContent = 'Running...';
 
-                // Save first
-                try {
-                    fn = await API.put(`/api/functions/${fnId}`, {
-                        code: editor.value,
-                        env_vars: container.querySelector('#env-editor').value.trim(),
-                        timeout_ms: parseInt(container.querySelector('#timeout-input').value) || 10000,
-                    });
-                } catch (e) { }
+        // Save first
+        try {
+          fn = await API.put(`/api/functions/${fnId}`, {
+            code: editor.value,
+            env_vars: container.querySelector('#env-editor').value.trim(),
+            timeout_ms: parseInt(container.querySelector('#timeout-input').value) || 10000,
+          });
+        } catch (e) { }
 
-                const method = container.querySelector('#test-method').value;
-                let testBody = null;
-                try { testBody = JSON.parse(container.querySelector('#test-body').value); } catch (e) { testBody = container.querySelector('#test-body').value || null; }
+        const method = container.querySelector('#test-method').value;
+        let testBody = null;
+        try { testBody = JSON.parse(container.querySelector('#test-body').value); } catch (e) { testBody = container.querySelector('#test-body').value || null; }
 
-                try {
-                    const result = await API.post(`/api/functions/${fnId}/test`, { method, body: testBody });
+        try {
+          const result = await API.post(`/api/functions/${fnId}/test`, { method, body: testBody });
 
-                    const resultDiv = container.querySelector('#test-result');
-                    resultDiv.style.display = 'block';
-                    container.querySelector('#test-status').textContent = `${result.status}`;
-                    container.querySelector('#test-status').style.background = (result.status >= 200 && result.status < 400) ? 'var(--green)' : 'var(--red)';
-                    container.querySelector('#test-status').style.color = 'white';
-                    container.querySelector('#test-duration').textContent = `${result.durationMs}ms`;
+          const resultDiv = container.querySelector('#test-result');
+          resultDiv.style.display = 'block';
+          container.querySelector('#test-status').textContent = `${result.status}`;
+          container.querySelector('#test-status').style.background = (result.status >= 200 && result.status < 400) ? 'var(--green)' : 'var(--red)';
+          container.querySelector('#test-status').style.color = 'white';
+          container.querySelector('#test-duration').textContent = `${result.durationMs}ms`;
 
-                    let output = '';
-                    if (result.consoleLogs) output += `📋 Console Output:\n${result.consoleLogs}\n\n`;
-                    if (result.error) output += `❌ Error:\n${result.error}\n\n`;
-                    output += `📤 Response Body:\n${result.body}`;
-                    container.querySelector('#test-output').textContent = output;
+          let output = '';
+          if (result.consoleLogs) output += `📋 Console Output:\n${result.consoleLogs}\n\n`;
+          if (result.error) output += `❌ Error:\n${result.error}\n\n`;
+          output += `📤 Response Body:\n${result.body}`;
+          container.querySelector('#test-output').textContent = output;
 
-                    // Refresh logs
-                    logs = await API.get(`/api/functions/${fnId}/logs`);
-                    container.querySelector('#logs-list').innerHTML = renderLogs();
-                } catch (e) { App.toast(e.message, 'error'); }
-                btn.disabled = false;
-                btn.textContent = '🧪 Test';
-            });
+          // Refresh logs
+          logs = await API.get(`/api/functions/${fnId}/logs`);
+          container.querySelector('#logs-list').innerHTML = renderLogs();
+        } catch (e) { App.toast(e.message, 'error'); }
+        btn.disabled = false;
+        btn.textContent = '🧪 Test';
+      });
 
-            // ─── Copy URL ─────────
-            container.querySelector('#copy-url-btn').addEventListener('click', () => {
-                navigator.clipboard.writeText(fnUrl).then(() => App.toast('URL copied!', 'success'));
-            });
+      // ─── Copy URL ─────────
+      container.querySelector('#copy-url-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(fnUrl).then(() => App.toast('URL copied!', 'success'));
+      });
 
-            // ─── Toggle ─────────
-            container.querySelector('#toggle-btn').addEventListener('click', async () => {
-                try {
-                    fn = await API.put(`/api/functions/${fnId}/toggle`);
-                    render();
-                } catch (e) { App.toast(e.message, 'error'); }
-            });
+      // ─── Toggle ─────────
+      container.querySelector('#toggle-btn').addEventListener('click', async () => {
+        try {
+          fn = await API.put(`/api/functions/${fnId}/toggle`);
+          render();
+        } catch (e) { App.toast(e.message, 'error'); }
+      });
 
-            // ─── Delete ─────────
-            container.querySelector('#delete-btn').addEventListener('click', async () => {
-                if (confirm('Delete this function permanently?')) {
-                    try {
-                        await API.del(`/api/functions/${fnId}`);
-                        location.hash = '#/functions';
-                    } catch (e) { App.toast(e.message, 'error'); }
-                }
-            });
+      // ─── Delete ─────────
+      container.querySelector('#delete-btn').addEventListener('click', async () => {
+        if (confirm('Delete this function permanently?')) {
+          try {
+            await API.del(`/api/functions/${fnId}`);
+            location.hash = '#/functions';
+          } catch (e) { App.toast(e.message, 'error'); }
+        }
+      });
 
-            // ─── Refresh Logs ─────────
-            container.querySelector('#refresh-logs-btn').addEventListener('click', async () => {
-                try {
-                    logs = await API.get(`/api/functions/${fnId}/logs`);
-                    container.querySelector('#logs-list').innerHTML = renderLogs();
-                } catch (e) { }
-            });
+      // ─── Refresh Logs ─────────
+      container.querySelector('#refresh-logs-btn').addEventListener('click', async () => {
+        try {
+          logs = await API.get(`/api/functions/${fnId}/logs`);
+          container.querySelector('#logs-list').innerHTML = renderLogs();
+        } catch (e) { }
+      });
 
-            // ─── Ctrl+S = Deploy ─────────
-            editor.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                    e.preventDefault();
-                    container.querySelector('#deploy-btn').click();
-                }
-            });
-        };
+      // ─── Ctrl+S = Deploy ─────────
+      editor.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          container.querySelector('#deploy-btn').click();
+        }
+      });
+    };
 
-        render();
-    }
+    render();
+  }
 };
