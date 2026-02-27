@@ -5,11 +5,13 @@ const { stmts } = require('../db');
 const fnEngine = require('../function-engine');
 
 function generateSlug(name) {
-    return name.toLowerCase()
+    const base = name.toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '')
-        .slice(0, 30) || 'fn';
+        .slice(0, 20) || 'fn';
+    const rand = crypto.randomBytes(3).toString('hex'); // 6 chars
+    return `${base}-function-${rand}`;
 }
 
 // ─── Starter Templates ─────────────────────
