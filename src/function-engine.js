@@ -9,6 +9,7 @@ const BLOCKED_HEADERS = new Set([
     'x-frame-options', 'content-security-policy',
     'strict-transport-security', 'x-content-type-options',
     'access-control-allow-origin', // We set this ourselves
+    'transfer-encoding', 'connection',
 ]);
 
 // Simple in-memory rate limiter per function: max 60 requests per second
@@ -34,6 +35,11 @@ function isRateLimited(fnId) {
     return state.count > max;
 }
 
+// Max response body size: 5MB
+const MAX_RESPONSE_BODY = 5 * 1024 * 1024;
+// Max console log entries per invocation
+const MAX_CONSOLE_ENTRIES = 200;
+
 class FunctionEngine {
     /**
      * Execute a serverless function in a sandboxed VM context.
@@ -56,20 +62,37 @@ class FunctionEngine {
 
         const startTime = Date.now();
         const consoleLogs = [];
+        let consoleOverflow = false;
         let error = null;
         let status = 200;
         let responseHeaders = { 'Content-Type': 'application/json' };
         let responseBody = '';
 
+        // Console logger with entry count limit to prevent memory exhaustion
+        const safeLog = (prefix) => (...args) => {
+            if (consoleLogs.length >= MAX_CONSOLE_ENTRIES) {
+                if (!consoleOverflow) {
+                    consoleLogs.push(`[SYSTEM] Console output truncated at ${MAX_CONSOLE_ENTRIES} entries.`);
+                    consoleOverflow = true;
+                }
+                return;
+            }
+            const line = args.map(a => {
+                try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
+                catch (e) { return '[unserializable]'; }
+            }).join(' ');
+            consoleLogs.push(prefix ? `${prefix} ${line}` : line);
+        };
+
         try {
-            // Decrypt env vars at execution time (never at rest in the engine)
+            // Decrypt env vars at execution time only
             let envVars = {};
             try {
                 const rawEnv = decrypt(func.env_vars || '{}');
                 envVars = JSON.parse(rawEnv || '{}');
             } catch (e) { }
 
-            // Build the request object exposed to user code
+            // Deep freeze the request object — prevents mutation by user code
             const REQUEST = Object.freeze({
                 method: request.method,
                 url: request.url || '/',
@@ -77,33 +100,43 @@ class FunctionEngine {
                 headers: Object.freeze({ ...request.headers }),
                 query: Object.freeze({ ...request.query }),
                 body: request.body || null,
-                env: Object.freeze(envVars) // env vars decrypted only here, inside the sandbox boundary
+                env: Object.freeze(envVars)
             });
 
-            // Carefully curate the sandbox — use primitive copies where possible
-            // to prevent prototype chain escape
+            // Curated sandbox — prevent prototype chain escapes
+            // Object/Array are exposed but property descriptors are neutered
+            const safeObject = Object.freeze({
+                keys: Object.keys,
+                values: Object.values,
+                entries: Object.entries,
+                assign: Object.assign,
+                freeze: Object.freeze,
+                fromEntries: Object.fromEntries,
+            });
+
             const sandbox = {
                 REQUEST,
-                console: {
-                    log: (...args) => consoleLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-                    error: (...args) => consoleLogs.push('[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-                    warn: (...args) => consoleLogs.push('[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-                    info: (...args) => consoleLogs.push('[INFO] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-                },
+                console: Object.freeze({
+                    log: safeLog(''),
+                    error: safeLog('[ERROR]'),
+                    warn: safeLog('[WARN]'),
+                    info: safeLog('[INFO]'),
+                }),
                 fetch: globalThis.fetch,
-                JSON: {
+                JSON: Object.freeze({
                     parse: JSON.parse.bind(JSON),
                     stringify: JSON.stringify.bind(JSON)
-                },
+                }),
                 Math: Object.freeze({
-                    ...Math,
-                    random: Math.random.bind(Math),
-                    floor: Math.floor.bind(Math), ceil: Math.ceil.bind(Math),
-                    round: Math.round.bind(Math), abs: Math.abs.bind(Math),
-                    min: Math.min.bind(Math), max: Math.max.bind(Math),
-                    sqrt: Math.sqrt.bind(Math), pow: Math.pow.bind(Math),
-                    log: Math.log.bind(Math), log2: Math.log2.bind(Math),
-                    PI: Math.PI, E: Math.E
+                    random: Math.random, floor: Math.floor, ceil: Math.ceil,
+                    round: Math.round, abs: Math.abs,
+                    min: Math.min, max: Math.max,
+                    sqrt: Math.sqrt, pow: Math.pow,
+                    log: Math.log, log2: Math.log2, log10: Math.log10,
+                    sign: Math.sign, trunc: Math.trunc, clz32: Math.clz32,
+                    PI: Math.PI, E: Math.E,
+                    sin: Math.sin, cos: Math.cos, tan: Math.tan,
+                    atan2: Math.atan2, hypot: Math.hypot,
                 }),
                 Date,
                 parseInt,
@@ -121,18 +154,22 @@ class FunctionEngine {
                 TextDecoder,
                 btoa: globalThis.btoa || ((s) => Buffer.from(s).toString('base64')),
                 atob: globalThis.atob || ((s) => Buffer.from(s, 'base64').toString()),
-                // Restricted crypto — only randomUUID, no key generation or hashing of secrets
                 crypto: Object.freeze({ randomUUID: () => crypto.randomUUID() }),
-                // Safe constructors
+                // Safe constructors — Object is neutered to expose only utility methods
+                Object: safeObject,
                 Array, String, Number, Boolean, Set, Map, RegExp,
-                // Error — expose but disarm the dangerous prepareStackTrace escape
                 Error: class SafeError extends Error {
-                    constructor(msg) { super(msg); Object.freeze(this); }
-                    static prepareStackTrace() { return ''; } // block V8 internals access
+                    constructor(msg) { super(msg); }
+                    static prepareStackTrace() { return ''; }
                 },
                 Promise,
                 setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms || 0, func.timeout_ms || 10000)),
                 clearTimeout,
+                setInterval: undefined,  // explicitly block setInterval
+                require: undefined,      // explicitly block require
+                process: undefined,      // explicitly block process
+                global: undefined,       // explicitly block global
+                globalThis: undefined,   // explicitly block globalThis
                 __RESULT__: null,
                 __ERROR__: null,
             };
@@ -150,7 +187,7 @@ class FunctionEngine {
                         }
                         __RESULT__ = await handler(REQUEST);
                     } catch (e) {
-                        __ERROR__ = e.message || String(e);
+                        __ERROR__ = (e && e.message) ? e.message : String(e);
                     }
                 })();
             `;
@@ -184,24 +221,26 @@ class FunctionEngine {
                 } else if (typeof result === 'string') {
                     status = 200;
                     responseHeaders['Content-Type'] = 'text/plain';
-                    responseBody = result;
+                    responseBody = result.length > MAX_RESPONSE_BODY ? result.substring(0, MAX_RESPONSE_BODY) : result;
                 } else if (typeof result === 'object') {
                     if (result.status || result.body !== undefined || result.headers) {
                         status = result.status || 200;
 
-                        // Sanitize headers — block dangerous ones
+                        // Sanitize response headers
                         if (result.headers && typeof result.headers === 'object') {
                             for (const [key, val] of Object.entries(result.headers)) {
                                 const lower = key.toLowerCase();
                                 if (!BLOCKED_HEADERS.has(lower)) {
-                                    responseHeaders[key] = String(val).substring(0, 1024); // limit header value length
+                                    responseHeaders[key] = String(val).substring(0, 1024);
                                 }
                             }
                         }
 
-                        responseBody = typeof result.body === 'string'
-                            ? result.body
-                            : JSON.stringify(result.body ?? '');
+                        if (typeof result.body === 'string') {
+                            responseBody = result.body.length > MAX_RESPONSE_BODY ? result.body.substring(0, MAX_RESPONSE_BODY) : result.body;
+                        } else {
+                            responseBody = JSON.stringify(result.body ?? '');
+                        }
                     } else {
                         status = 200;
                         responseBody = JSON.stringify(result);
@@ -209,6 +248,11 @@ class FunctionEngine {
                 } else {
                     status = 200;
                     responseBody = String(result);
+                }
+
+                // Final guard: cap response body size
+                if (responseBody.length > MAX_RESPONSE_BODY) {
+                    responseBody = responseBody.substring(0, MAX_RESPONSE_BODY);
                 }
             }
         } catch (e) {

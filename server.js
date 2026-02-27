@@ -111,22 +111,42 @@ app.use(async (req, res, next) => {
     // Serverless function subdomain: slug.clickdep.dev
     const func = stmts.getFunctionBySlug.get(subdomain);
     if (func) {
+        // CORS preflight — respond immediately without executing the function
+        if (req.method === 'OPTIONS') {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            res.setHeader('Access-Control-Max-Age', '86400');
+            return res.status(204).end();
+        }
+
         if (!func.is_active) {
             return res.status(503).json({ error: `Function "${func.name}" is currently disabled.` });
         }
 
         const fnEngine = require('./src/function-engine');
 
-        // Parse request body for POST/PUT/PATCH
+        // Parse request body for POST/PUT/PATCH — capped at 1MB
+        const MAX_BODY_SIZE = 1 * 1024 * 1024; // 1MB
         let body = null;
         if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-            body = await new Promise((resolve) => {
+            body = await new Promise((resolve, reject) => {
                 let raw = '';
-                req.on('data', chunk => { raw += chunk; });
+                let size = 0;
+                req.on('data', chunk => {
+                    size += chunk.length;
+                    if (size > MAX_BODY_SIZE) {
+                        req.destroy();
+                        return resolve(null);
+                    }
+                    raw += chunk;
+                });
                 req.on('end', () => {
+                    if (size > MAX_BODY_SIZE) return resolve(null);
                     try { resolve(JSON.parse(raw)); }
                     catch (e) { resolve(raw || null); }
                 });
+                req.on('error', () => resolve(null));
             });
         }
 
@@ -141,7 +161,6 @@ app.use(async (req, res, next) => {
 
         try {
             const result = await fnEngine.execute(func, request);
-            // Set response headers
             if (result.headers) {
                 Object.entries(result.headers).forEach(([k, v]) => res.setHeader(k, v));
             }
