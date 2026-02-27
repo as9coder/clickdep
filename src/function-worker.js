@@ -69,6 +69,12 @@ async function executeInWorker(userCode, request) {
         btoa: globalThis.btoa || ((s) => Buffer.from(s).toString('base64')),
         atob: globalThis.atob || ((s) => Buffer.from(s, 'base64').toString()),
         crypto: Object.freeze({ randomUUID: () => crypto.randomUUID() }),
+        // Safe Object — utility methods only, no defineProperty/getPrototypeOf/etc.
+        Object: Object.freeze({
+            keys: Object.keys, values: Object.values, entries: Object.entries,
+            assign: Object.assign, freeze: Object.freeze, fromEntries: Object.fromEntries,
+            create: Object.create,
+        }),
         Array, String, Number, Boolean, Set, Map, RegExp, Error, Promise,
         setTimeout, clearTimeout,
 
