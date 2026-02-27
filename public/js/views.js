@@ -1,7 +1,131 @@
 // ─── View Renderers ─────────────────────────
 window.Views = {
-  // ─── DASHBOARD ─────────────────────────────
+  // ─── DASHBOARD (Service Hub Overview) ──────
   async dashboard(container) {
+    let projects = [], vps = [], cronJobs = [], fns = [], mediaStats = {}, stats = null, activity = [];
+    try {
+      [projects, vps, cronJobs, fns, mediaStats, stats, activity] = await Promise.all([
+        API.get('/api/projects').catch(() => []),
+        API.get('/api/vps').catch(() => []),
+        API.get('/api/cron').catch(() => []),
+        API.get('/api/functions').catch(() => []),
+        API.get('/api/media').then(r => r.stats || {}).catch(() => ({})),
+        API.get('/api/system/stats').catch(() => null),
+        API.get('/api/system/activity?limit=5').catch(() => []),
+      ]);
+    } catch (e) { }
+
+    const running = projects.filter(p => p.status === 'running').length;
+    const vpsRunning = vps.filter(v => v.status === 'running').length;
+    const activeCron = cronJobs.filter(j => j.is_active).length;
+    const activeFns = fns.filter(f => f.is_active).length;
+    const totalInvocations = fns.reduce((s, f) => s + (f.invocation_count || 0), 0);
+
+    const serviceCard = (emoji, title, subtitle, stats, href, color) => `
+      <a href="${href}" class="project-card animate-in" style="text-decoration:none;cursor:pointer;border-left:3px solid ${color};transition:transform .15s,box-shadow .15s"
+         onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.3)'"
+         onmouseleave="this.style.transform='';this.style.boxShadow=''">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <span style="font-size:1.8rem">${emoji}</span>
+          <div>
+            <div class="card-name" style="font-size:1.05rem">${title}</div>
+            <div class="text-xs text-muted">${subtitle}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">${stats}</div>
+      </a>`;
+
+    const miniStat = (label, value, color) => `<div><div class="text-xs text-muted">${label}</div><div style="font-family:var(--font-heading);font-size:1.2rem;color:${color || 'var(--text-primary)'}">${value}</div></div>`;
+
+    const statusIcon = (s) => s === 'success' ? '✅' : s === 'failed' ? '❌' : s === 'building' ? '🔨' : '⏳';
+
+    container.innerHTML = `
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <div class="page-header-actions">
+          <span class="text-sm text-muted" style="margin-right:8px">⌘K to search</span>
+        </div>
+      </div>
+
+      <!-- Top-level Stats -->
+      <div class="overview-grid" style="margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-card-label">CPU Load</div>
+          <div class="stat-card-value">${stats ? stats.cpu.currentLoad.toFixed(1) + '%' : '--'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Memory</div>
+          <div class="stat-card-value">${stats ? stats.memory.percent.toFixed(1) + '%' : '--'}</div>
+          <div class="stat-card-sub">${stats ? formatBytes(stats.memory.used) + ' / ' + formatBytes(stats.memory.total) : ''}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Total Services</div>
+          <div class="stat-card-value">${projects.length + vps.length + cronJobs.length + fns.length}</div>
+          <div class="stat-card-sub">${running + vpsRunning} running</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Uptime</div>
+          <div class="stat-card-value">${stats ? Math.floor(stats.uptime / 3600) + 'h' : '--'}</div>
+          <div class="stat-card-sub">${stats ? Math.floor((stats.uptime % 3600) / 60) + 'm' : ''}</div>
+        </div>
+      </div>
+
+      <!-- Service Cards -->
+      <h3 style="margin-bottom:16px;font-family:var(--font-heading)">Services</h3>
+      <div class="projects-grid" style="margin-bottom:24px">
+        ${serviceCard('🌐', 'Web Hosting', 'Deploy websites from GitHub or ZIP', `
+          ${miniStat('Projects', projects.length, '')}${miniStat('Running', running, 'var(--green)')}${miniStat('Stopped', projects.length - running, 'var(--text-muted)')}
+        `, '#/hosting', 'var(--accent)')}
+
+        ${serviceCard('🖥️', 'Virtual Servers', 'Full Linux containers with terminal access', `
+          ${miniStat('Total', vps.length, '')}${miniStat('Running', vpsRunning, 'var(--green)')}
+        `, '#/vps', 'var(--purple)')}
+
+        ${serviceCard('⚡', 'Functions', 'Serverless code execution on unique URLs', `
+          ${miniStat('Functions', fns.length, '')}${miniStat('Active', activeFns, 'var(--green)')}${miniStat('Invocations', totalInvocations, 'var(--accent)')}
+        `, '#/functions', 'var(--yellow)')}
+
+        ${serviceCard('⏱️', 'Cron Jobs', 'Scheduled HTTP requests & container commands', `
+          ${miniStat('Jobs', cronJobs.length, '')}${miniStat('Active', activeCron, 'var(--green)')}
+        `, '#/cron', 'var(--blue)')}
+
+        ${serviceCard('📦', 'Media Buckets', 'Upload & embed images, videos, GIFs', `
+          ${miniStat('Files', mediaStats.count || 0, '')}${miniStat('Storage', formatBytes(mediaStats.total_size || 0), '')}
+        `, '#/buckets', 'var(--red)')}
+
+        ${serviceCard('📈', 'System Monitor', 'CPU, RAM, Docker, and storage stats', `
+          ${miniStat('CPU', stats ? stats.cpu.currentLoad.toFixed(0) + '%' : '--', '')}${miniStat('RAM', stats ? stats.memory.percent.toFixed(0) + '%' : '--', '')}
+        `, '#/monitor', 'var(--green)')}
+      </div>
+
+      <!-- Quick Actions -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+        <a href="#/new" class="btn btn-primary">🚀 New Deploy</a>
+        <a href="#/vps/new" class="btn btn-ghost">🖥️ New VPS</a>
+        <a href="#/functions/new" class="btn btn-ghost">⚡ New Function</a>
+        <a href="#/cron/new" class="btn btn-ghost">⏱️ New Cron Job</a>
+      </div>
+
+      <!-- Recent Activity -->
+      <h3 style="margin-bottom:12px;font-family:var(--font-heading)">Recent Activity</h3>
+      <div style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);overflow:hidden">
+        ${activity.length > 0 ? activity.map(a => `
+          <div class="activity-item" style="cursor:pointer" onclick="location.hash='#/project/${a.project_id}'">
+            <div class="activity-icon">${statusIcon(a.status)}</div>
+            <div class="activity-body">
+              <div class="activity-title">${a.project_name || 'Unknown'}</div>
+              <div class="activity-desc">${a.status} · ${a.framework || ''} · ${a.triggered_by || 'manual'}${a.duration ? ` · ${a.duration}s` : ''}</div>
+            </div>
+            <div class="activity-time">${timeAgo(a.started_at)}</div>
+          </div>
+        `).join('') : '<div class="text-muted" style="padding:30px;text-align:center">No recent activity</div>'}
+        ${activity.length > 0 ? '<div style="text-align:center;padding:8px"><a href="#/activity" class="text-sm" style="color:var(--accent)">View all activity →</a></div>' : ''}
+      </div>
+    `;
+  },
+
+  // ─── WEB HOSTING (moved from old Dashboard) ────
+  async hosting(container) {
     let projects = [];
     let viewMode = localStorage.getItem('view_mode') || 'grid';
     let searchQuery = '';
@@ -46,7 +170,7 @@ window.Views = {
 
       container.innerHTML = `
         <div class="page-header">
-          <h1>Dashboard</h1>
+          <h1>Web Hosting</h1>
           <div class="page-header-actions">
             <div class="search-bar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>

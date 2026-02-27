@@ -98,7 +98,9 @@ window.App = {
         document.querySelectorAll('.nav-item').forEach(n => {
             n.classList.toggle('active',
                 n.getAttribute('href') === hash ||
-                (hash.startsWith('#/project') && n.dataset.page === 'dashboard') ||
+                (hash.startsWith('#/project') && n.dataset.page === 'hosting') ||
+                (hash === '#/new' && n.dataset.page === 'hosting') ||
+                (hash.startsWith('#/hosting') && n.dataset.page === 'hosting') ||
                 (hash.startsWith('#/vps') && n.dataset.page === 'vps') ||
                 (hash.startsWith('#/cron') && n.dataset.page === 'cron') ||
                 (hash.startsWith('#/bucket') && n.dataset.page === 'buckets') ||
@@ -108,6 +110,8 @@ window.App = {
 
         if (hash === '#/' || hash === '#') {
             this.currentCleanup = await Views.dashboard(container);
+        } else if (hash === '#/hosting') {
+            this.currentCleanup = await Views.hosting(container);
         } else if (hash === '#/new') {
             Views.newProject(container);
         } else if (hash.startsWith('#/project/')) {
@@ -154,7 +158,8 @@ window.App = {
         const results = document.getElementById('palette-results');
 
         const actions = [
-            { name: 'Dashboard', desc: 'View all projects', icon: '📊', action: () => location.hash = '#/' },
+            { name: 'Dashboard', desc: 'Service overview & stats', icon: '📊', action: () => location.hash = '#/' },
+            { name: 'Web Hosting', desc: 'Manage deployed websites', icon: '🌐', action: () => location.hash = '#/hosting' },
             { name: 'New Deploy', desc: 'Deploy a new project', icon: '🚀', action: () => location.hash = '#/new', shortcut: 'Ctrl+N' },
             { name: 'System Monitor', desc: 'View system stats', icon: '📈', action: () => location.hash = '#/monitor' },
             { name: 'VPS', desc: 'Manage Virtual Servers', icon: '🖥️', action: () => location.hash = '#/vps' },
