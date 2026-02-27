@@ -15,8 +15,8 @@ const FunctionViews = {
     let baseDomain = '';
     try {
       const sys = await API.get('/api/system');
-      baseDomain = sys.base_domain || '';
-    } catch (e) { }
+      baseDomain = sys.base_domain || 'clickdep.dev';
+    } catch (e) { baseDomain = 'clickdep.dev'; }
 
     container.innerHTML = `
       <div class="page-header">
@@ -57,6 +57,12 @@ const FunctionViews = {
 
   // ─── CREATE VIEW ────────────────────────────
   async create(container) {
+    let baseDomain = 'clickdep.dev';
+    try {
+      const sys = await API.get('/api/system');
+      baseDomain = sys.base_domain || 'clickdep.dev';
+    } catch (e) { }
+
     container.innerHTML = `
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:16px">
@@ -69,7 +75,7 @@ const FunctionViews = {
         <div class="form-group">
           <label>Function Name</label>
           <input type="text" id="fn-name" placeholder="e.g. send-email" required>
-          <small class="text-muted">This becomes the subdomain: <strong id="slug-preview">your-function</strong>.clickdep.dev</small>
+          <small class="text-muted">URL: <code id="slug-preview" style="color:var(--primary)">https://your-function-function-xxxxxx.${baseDomain}</code></small>
         </div>
 
         <div class="form-group">
@@ -84,6 +90,12 @@ const FunctionViews = {
           </select>
         </div>
 
+        <div class="form-group">
+          <label>🔒 Environment Variables <span class="badge" style="font-size:0.65rem;background:var(--green);color:white;vertical-align:middle">AES-256-GCM</span></label>
+          <textarea id="fn-env" rows="3" style="font-family:var(--mono);font-size:0.8rem;width:100%;resize:vertical" placeholder='{"API_KEY": "sk-...", "SECRET": "..."}'>{}</textarea>
+          <small class="text-muted">Encrypted at rest automatically. Access via <code>request.env</code> in your handler.</small>
+        </div>
+
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
           <button id="create-btn" class="btn btn-primary">Create & Open Editor</button>
         </div>
@@ -94,8 +106,8 @@ const FunctionViews = {
     const nameInput = container.querySelector('#fn-name');
     const slugPreview = container.querySelector('#slug-preview');
     nameInput.addEventListener('input', () => {
-      const slug = nameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'your-function';
-      slugPreview.textContent = slug;
+      const slug = nameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'your-function';
+      slugPreview.textContent = `https://${slug}-function-xxxxxx.${baseDomain}`;
     });
 
     // Create
@@ -116,7 +128,8 @@ const FunctionViews = {
           code = tmpl.code;
         } catch (e) { code = '// Write your handler function here\nasync function handler(request) {\n    return { message: "Hello!" };\n}'; }
 
-        const fn = await API.post('/api/functions', { name, code });
+        const envVars = container.querySelector('#fn-env').value.trim() || '{}';
+        const fn = await API.post('/api/functions', { name, code, env_vars: envVars });
         App.toast('Function created!', 'success');
         location.hash = `#/functions/${fn.id}`;
       } catch (e) {
@@ -145,10 +158,10 @@ const FunctionViews = {
       return;
     }
 
-    let baseDomain = '';
+    let baseDomain = 'clickdep.dev';
     try {
       const sys = await API.get('/api/system');
-      baseDomain = sys.base_domain || '';
+      baseDomain = sys.base_domain || 'clickdep.dev';
     } catch (e) { }
 
     const fnUrl = baseDomain ? `https://${fn.slug}.${baseDomain}` : fn.slug;
