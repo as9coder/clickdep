@@ -101,7 +101,8 @@ window.App = {
                 (hash.startsWith('#/project') && n.dataset.page === 'dashboard') ||
                 (hash.startsWith('#/vps') && n.dataset.page === 'vps') ||
                 (hash.startsWith('#/cron') && n.dataset.page === 'cron') ||
-                (hash.startsWith('#/bucket') && n.dataset.page === 'buckets')
+                (hash.startsWith('#/bucket') && n.dataset.page === 'buckets') ||
+                (hash.startsWith('#/function') && n.dataset.page === 'functions')
             );
         });
 
@@ -134,6 +135,13 @@ window.App = {
             await VPSViews.detail(container, id);
         } else if (hash === '#/buckets') {
             await BucketViews.list(container);
+        } else if (hash === '#/functions') {
+            await FunctionViews.list(container);
+        } else if (hash === '#/functions/new') {
+            await FunctionViews.create(container);
+        } else if (hash.startsWith('#/functions/')) {
+            const id = hash.replace('#/functions/', '');
+            await FunctionViews.detail(container, id);
         } else {
             container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">404</div><h2>Page not found</h2><a href="#/" class="btn btn-primary">Go Home</a></div>';
         }
@@ -152,6 +160,7 @@ window.App = {
             { name: 'VPS', desc: 'Manage Virtual Servers', icon: '🖥️', action: () => location.hash = '#/vps' },
             { name: 'Cron Jobs', desc: 'Manage automated tasks', icon: '⏱️', action: () => location.hash = '#/cron' },
             { name: 'Buckets', desc: 'Upload & embed media files', icon: '📎', action: () => location.hash = '#/buckets' },
+            { name: 'Functions', desc: 'Serverless code execution', icon: '⚡', action: () => location.hash = '#/functions' },
             { name: 'Activity', desc: 'View deploy history', icon: '🕐', action: () => location.hash = '#/activity' },
             { name: 'Settings', desc: 'App configuration', icon: '⚙️', action: () => location.hash = '#/settings' },
         ];

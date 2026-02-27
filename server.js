@@ -63,7 +63,7 @@ function extractSubdomain(host) {
 }
 
 // Intercept all HTTP requests for subdomains
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     const subdomain = extractSubdomain(req.headers.host);
     if (!subdomain) return next(); // no subdomain — serve dashboard
 
@@ -106,6 +106,51 @@ app.use((req, res, next) => {
         res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(mediaFile.original_name)}"`);
 
         return fs.createReadStream(filePath).pipe(res);
+    }
+
+    // Serverless function subdomain: slug.clickdep.dev
+    const func = stmts.getFunctionBySlug.get(subdomain);
+    if (func) {
+        if (!func.is_active) {
+            return res.status(503).json({ error: `Function "${func.name}" is currently disabled.` });
+        }
+
+        const fnEngine = require('./src/function-engine');
+
+        // Parse request body for POST/PUT/PATCH
+        let body = null;
+        if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+            body = await new Promise((resolve) => {
+                let raw = '';
+                req.on('data', chunk => { raw += chunk; });
+                req.on('end', () => {
+                    try { resolve(JSON.parse(raw)); }
+                    catch (e) { resolve(raw || null); }
+                });
+            });
+        }
+
+        const request = {
+            method: req.method,
+            url: req.url,
+            path: req.path,
+            headers: req.headers,
+            query: req.query,
+            body
+        };
+
+        try {
+            const result = await fnEngine.execute(func, request);
+            // Set response headers
+            if (result.headers) {
+                Object.entries(result.headers).forEach(([k, v]) => res.setHeader(k, v));
+            }
+            res.setHeader('X-Function-Duration', `${result.durationMs}ms`);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            return res.status(result.status).send(result.body);
+        } catch (e) {
+            return res.status(500).json({ error: `Function execution failed: ${e.message}` });
+        }
     }
 
     // Website project subdomain
@@ -294,6 +339,7 @@ const webhookRoutes = require('./src/routes/webhooks');
 const vpsRoutes = require('./src/routes/vps');
 const cronRoutes = require('./src/routes/cron');
 const mediaRoutes = require('./src/routes/media');
+const functionRoutes = require('./src/routes/functions');
 
 // Attach broadcast to routes that need it
 projectRoutes.setBroadcast(broadcast);
@@ -308,6 +354,7 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/vps', vpsRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/functions', functionRoutes);
 
 // SPA fallback
 app.get('*', (req, res) => {

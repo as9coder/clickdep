@@ -187,6 +187,35 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_media_slug ON media_files(slug);
+
+  CREATE TABLE IF NOT EXISTS functions (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    code TEXT NOT NULL DEFAULT '',
+    env_vars TEXT DEFAULT '{}',
+    timeout_ms INTEGER DEFAULT 10000,
+    is_active INTEGER DEFAULT 1,
+    last_invoked_at TEXT,
+    invocation_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_fn_slug ON functions(slug);
+
+  CREATE TABLE IF NOT EXISTS function_logs (
+    id TEXT PRIMARY KEY,
+    function_id TEXT NOT NULL,
+    method TEXT,
+    path TEXT,
+    status_code INTEGER,
+    duration_ms INTEGER,
+    console_output TEXT,
+    error TEXT,
+    executed_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (function_id) REFERENCES functions(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_fn_logs ON function_logs(function_id);
 `);
 
 // Gracefully add columns to existing tables if they don't exist
@@ -291,6 +320,20 @@ const stmts = {
   insertMedia: db.prepare(`INSERT INTO media_files (id, slug, original_name, mime_type, file_size, file_path, bucket_type) VALUES (?, ?, ?, ?, ?, ?, ?)`),
   deleteMedia: db.prepare(`DELETE FROM media_files WHERE id = ?`),
   countMedia: db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_size FROM media_files`),
+
+  // Serverless Functions
+  getAllFunctions: db.prepare(`SELECT * FROM functions ORDER BY created_at DESC`),
+  getFunction: db.prepare(`SELECT * FROM functions WHERE id = ?`),
+  getFunctionBySlug: db.prepare(`SELECT * FROM functions WHERE slug = ?`),
+  insertFunction: db.prepare(`INSERT INTO functions (id, name, slug, code, env_vars, timeout_ms, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)`),
+  updateFunction: db.prepare(`UPDATE functions SET name = ?, code = ?, env_vars = ?, timeout_ms = ?, updated_at = datetime('now') WHERE id = ?`),
+  toggleFunction: db.prepare(`UPDATE functions SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END, updated_at = datetime('now') WHERE id = ?`),
+  deleteFunction: db.prepare(`DELETE FROM functions WHERE id = ?`),
+  incrementFunctionInvocations: db.prepare(`UPDATE functions SET invocation_count = invocation_count + 1, last_invoked_at = datetime('now') WHERE id = ?`),
+
+  insertFunctionLog: db.prepare(`INSERT INTO function_logs (id, function_id, method, path, status_code, duration_ms, console_output, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
+  getFunctionLogs: db.prepare(`SELECT * FROM function_logs WHERE function_id = ? ORDER BY executed_at DESC LIMIT 100`),
+  pruneFunctionLogs: db.prepare(`DELETE FROM function_logs WHERE executed_at < datetime('now', '-7 days')`),
 };
 
 module.exports = { db, stmts, DATA_DIR, DB_PATH };
