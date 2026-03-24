@@ -188,6 +188,12 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_media_slug ON media_files(slug);
 
+  CREATE TABLE IF NOT EXISTS media_buckets (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS functions (
     id TEXT PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
@@ -221,6 +227,16 @@ db.exec(`
 // Gracefully add columns to existing tables if they don't exist
 try { db.exec(`ALTER TABLE cron_jobs ADD COLUMN timezone TEXT DEFAULT 'UTC';`); } catch (e) { }
 try { db.exec(`ALTER TABLE cron_jobs ADD COLUMN failure_webhook TEXT;`); } catch (e) { }
+try { db.exec(`ALTER TABLE media_files ADD COLUMN bucket_id TEXT REFERENCES media_buckets(id);`); } catch (e) { }
+
+// Legacy bucket for rows created before bucket_id existed
+try {
+  const bc = db.prepare(`SELECT COUNT(*) as c FROM media_buckets`).get();
+  if (bc.c === 0) {
+    db.prepare(`INSERT INTO media_buckets (id, name) VALUES ('legacy-bucket', 'Legacy')`).run();
+  }
+  db.exec(`UPDATE media_files SET bucket_id = 'legacy-bucket' WHERE bucket_id IS NULL OR bucket_id = ''`);
+} catch (e) { /* ignore */ }
 
 // Prepared statements
 const stmts = {
@@ -313,13 +329,24 @@ const stmts = {
   getRecentCronLogs: db.prepare(`SELECT cl.*, cj.name as job_name FROM cron_logs cl JOIN cron_jobs cj ON cl.job_id = cj.id ORDER BY cl.executed_at DESC LIMIT 50`),
   pruneCronLogs: db.prepare(`DELETE FROM cron_logs WHERE executed_at < datetime('now', '-30 days')`),
 
-  // Media / Embed Buckets
-  getAllMedia: db.prepare(`SELECT * FROM media_files ORDER BY created_at DESC`),
+  // Media / Buckets
+  getAllMedia: db.prepare(`
+    SELECT m.*, b.name AS bucket_name FROM media_files m
+    LEFT JOIN media_buckets b ON m.bucket_id = b.id
+    ORDER BY m.created_at DESC
+  `),
   getMediaById: db.prepare(`SELECT * FROM media_files WHERE id = ?`),
-  getMediaBySlug: db.prepare(`SELECT * FROM media_files WHERE slug = ?`),
-  insertMedia: db.prepare(`INSERT INTO media_files (id, slug, original_name, mime_type, file_size, file_path, bucket_type) VALUES (?, ?, ?, ?, ?, ?, ?)`),
+  getMediaBySlug: db.prepare(`SELECT * FROM media_files WHERE LOWER(slug) = LOWER(?)`),
+  insertMedia: db.prepare(`INSERT INTO media_files (id, slug, original_name, mime_type, file_size, file_path, bucket_type, bucket_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
   deleteMedia: db.prepare(`DELETE FROM media_files WHERE id = ?`),
   countMedia: db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_size FROM media_files`),
+
+  getAllBuckets: db.prepare(`SELECT * FROM media_buckets ORDER BY name ASC`),
+  getBucket: db.prepare(`SELECT * FROM media_buckets WHERE id = ?`),
+  getBucketByName: db.prepare(`SELECT * FROM media_buckets WHERE LOWER(name) = LOWER(?)`),
+  insertBucket: db.prepare(`INSERT INTO media_buckets (id, name) VALUES (?, ?)`),
+  deleteBucket: db.prepare(`DELETE FROM media_buckets WHERE id = ?`),
+  countMediaInBucket: db.prepare(`SELECT COUNT(*) as count FROM media_files WHERE bucket_id = ?`),
 
   // Serverless Functions
   getAllFunctions: db.prepare(`SELECT * FROM functions ORDER BY created_at DESC`),

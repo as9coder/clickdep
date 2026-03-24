@@ -8,6 +8,7 @@ const dockerMgr = require('./src/docker-manager');
 const vpsMgr = require('./src/vps-manager');
 const cronMgr = require('./src/cron-manager');
 const github = require('./src/github');
+const mediaSubdomain = require('./src/media-subdomain');
 
 const app = express();
 const server = http.createServer(app);
@@ -88,24 +89,11 @@ app.use(async (req, res, next) => {
         return res.send(html);
     }
 
-    // Media embed subdomain: slug.clickdep.dev
+    // Media bucket subdomain: bucket-file-storage-xxxxx.clickdep.dev
     const mediaFile = stmts.getMediaBySlug.get(subdomain);
     if (mediaFile) {
-        const mediaDir = path.join(__dirname, 'data', 'media');
-        const filePath = path.join(mediaDir, mediaFile.file_path);
-
-        if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
-
-        // Always serve the actual binary file directly with the right headers.
-        // This ensures browsers just show the native image/video player, 
-        // and Discord natively embeds the un-wrapped media perfectly.
-        res.setHeader('Content-Type', mediaFile.mime_type);
-        res.setHeader('Content-Length', mediaFile.file_size);
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(mediaFile.original_name)}"`);
-
-        return fs.createReadStream(filePath).pipe(res);
+        const dataDir = path.join(__dirname, 'data');
+        return mediaSubdomain.handleMediaSubdomain(req, res, mediaFile, subdomain, getBaseDomain, dataDir);
     }
 
     // Serverless function subdomain: slug.clickdep.dev

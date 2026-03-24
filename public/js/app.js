@@ -164,7 +164,7 @@ window.App = {
             { name: 'System Monitor', desc: 'View system stats', icon: '📈', action: () => location.hash = '#/monitor' },
             { name: 'VPS', desc: 'Manage Virtual Servers', icon: '🖥️', action: () => location.hash = '#/vps' },
             { name: 'Cron Jobs', desc: 'Manage automated tasks', icon: '⏱️', action: () => location.hash = '#/cron' },
-            { name: 'Buckets', desc: 'Upload & embed media files', icon: '📎', action: () => location.hash = '#/buckets' },
+            { name: 'Buckets', desc: 'Folders for files & share links', icon: '📎', action: () => location.hash = '#/buckets' },
             { name: 'Functions', desc: 'Serverless code execution', icon: '⚡', action: () => location.hash = '#/functions' },
             { name: 'Activity', desc: 'View deploy history', icon: '🕐', action: () => location.hash = '#/activity' },
             { name: 'Settings', desc: 'App configuration', icon: '⚙️', action: () => location.hash = '#/settings' },

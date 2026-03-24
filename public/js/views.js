@@ -89,7 +89,7 @@ window.Views = {
           ${miniStat('Jobs', cronJobs.length, '')}${miniStat('Active', activeCron, 'var(--green)')}
         `, '#/cron', 'var(--blue)')}
 
-        ${serviceCard('📦', 'Media Buckets', 'Upload & embed images, videos, GIFs', `
+        ${serviceCard('📦', 'Buckets', 'Named folders for images, GIFs, videos & files — shareable links', `
           ${miniStat('Files', mediaStats.count || 0, '')}${miniStat('Storage', formatBytes(mediaStats.total_size || 0), '')}
         `, '#/buckets', 'var(--red)')}
 
