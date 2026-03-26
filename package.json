@@ -4,8 +4,10 @@
   "description": "Self-hosted deployment platform with Docker containerization",
   "main": "server.js",
   "scripts": {
+    "build:agentic": "esbuild src/agentic-ui/main.ts --bundle --outfile=public/js/agentic.js --format=iife --global-name=AgenticCode --minify --sourcemap",
+    "prestart": "npm run build:agentic",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "npm run build:agentic && node server.js"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.2",
@@ -26,5 +28,9 @@
     "tree-kill": "^1.2.2",
     "uuid": "^10.0.0",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
   }
 }

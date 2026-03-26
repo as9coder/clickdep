@@ -93,6 +93,10 @@ window.Views = {
           ${miniStat('Files', mediaStats.count || 0, '')}${miniStat('Storage', formatBytes(mediaStats.total_size || 0), '')}
         `, '#/buckets', 'var(--red)')}
 
+        ${serviceCard('✨', 'Agentic Code', 'Describe a web app in one prompt — AI builds it in one shot', `
+          ${miniStat('Mode', 'Preview', 'var(--purple)')}
+        `, '#/agentic', 'var(--purple)')}
+
         ${serviceCard('📈', 'System Monitor', 'CPU, RAM, Docker, and storage stats', `
           ${miniStat('CPU', stats ? stats.cpu.currentLoad.toFixed(0) + '%' : '--', '')}${miniStat('RAM', stats ? stats.memory.percent.toFixed(0) + '%' : '--', '')}
         `, '#/monitor', 'var(--green)')}
@@ -104,6 +108,7 @@ window.Views = {
         <a href="#/vps/new" class="btn btn-ghost">🖥️ New VPS</a>
         <a href="#/functions/new" class="btn btn-ghost">⚡ New Function</a>
         <a href="#/cron/new" class="btn btn-ghost">⏱️ New Cron Job</a>
+        <a href="#/agentic" class="btn btn-ghost">✨ Agentic Code</a>
       </div>
 
       <!-- Recent Activity -->

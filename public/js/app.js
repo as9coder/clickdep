@@ -104,7 +104,8 @@ window.App = {
                 (hash.startsWith('#/vps') && n.dataset.page === 'vps') ||
                 (hash.startsWith('#/cron') && n.dataset.page === 'cron') ||
                 (hash.startsWith('#/bucket') && n.dataset.page === 'buckets') ||
-                (hash.startsWith('#/function') && n.dataset.page === 'functions')
+                (hash.startsWith('#/function') && n.dataset.page === 'functions') ||
+                (hash === '#/agentic' && n.dataset.page === 'agentic')
             );
         });
 
@@ -146,6 +147,12 @@ window.App = {
         } else if (hash.startsWith('#/functions/')) {
             const id = hash.replace('#/functions/', '');
             await FunctionViews.detail(container, id);
+        } else if (hash === '#/agentic') {
+            if (!window.AgenticCode || typeof window.AgenticCode.mount !== 'function') {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><h2>Agentic Code not loaded</h2><p class="text-muted">Run <code class="mono">npm run build:agentic</code> then refresh.</p><a href="#/" class="btn btn-primary">Dashboard</a></div>';
+                return;
+            }
+            this.currentCleanup = window.AgenticCode.mount(container);
         } else {
             container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">404</div><h2>Page not found</h2><a href="#/" class="btn btn-primary">Go Home</a></div>';
         }
@@ -166,6 +173,7 @@ window.App = {
             { name: 'Cron Jobs', desc: 'Manage automated tasks', icon: '⏱️', action: () => location.hash = '#/cron' },
             { name: 'Buckets', desc: 'Folders for files & share links', icon: '📎', action: () => location.hash = '#/buckets' },
             { name: 'Functions', desc: 'Serverless code execution', icon: '⚡', action: () => location.hash = '#/functions' },
+            { name: 'Agentic Code', desc: 'Prompt-to-webapp (one-shot)', icon: '✨', action: () => location.hash = '#/agentic' },
             { name: 'Activity', desc: 'View deploy history', icon: '🕐', action: () => location.hash = '#/activity' },
             { name: 'Settings', desc: 'App configuration', icon: '⚙️', action: () => location.hash = '#/settings' },
         ];

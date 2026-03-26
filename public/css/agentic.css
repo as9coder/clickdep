@@ -1,0 +1,249 @@
+/* Agentic Code — composer + preview (scoped under .agentic-page) */
+
+.agentic-page {
+  min-height: 100%;
+  padding: 0 0 32px;
+}
+
+.agentic-root {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.agentic-hero {
+  margin-bottom: 28px;
+}
+
+.agentic-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--purple);
+  background: var(--purple-soft);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  margin-bottom: 12px;
+}
+
+.agentic-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.agentic-sub {
+  color: var(--text-secondary);
+  max-width: 640px;
+  line-height: 1.55;
+  font-size: 0.98rem;
+}
+
+.agentic-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .agentic-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.agentic-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.agentic-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-family: var(--font-heading);
+}
+
+.agentic-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.agentic-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.agentic-textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.agentic-presets {
+  margin-top: 14px;
+}
+
+.agentic-presets-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.agentic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agentic-chip {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px dashed var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  max-width: 100%;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.agentic-chip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.agentic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  align-items: center;
+}
+
+.agentic-btn-primary {
+  position: relative;
+  min-width: 180px;
+}
+
+.agentic-btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: agentic-spin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes agentic-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.agentic-hint {
+  margin-top: 14px;
+  line-height: 1.45;
+}
+
+.agentic-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.agentic-preview-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+}
+
+.agentic-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.agentic-status--idle {
+  background: var(--bg-card-hover);
+  color: var(--text-muted);
+}
+
+.agentic-status--busy {
+  background: var(--yellow-soft);
+  color: var(--text-primary);
+}
+
+.agentic-status--ready {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.agentic-preview-frame-wrap {
+  position: relative;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: hsl(30, 8%, 18%);
+  min-height: 360px;
+  overflow: hidden;
+}
+
+.agentic-preview-frame-wrap--ready .agentic-empty {
+  display: none;
+}
+
+.agentic-preview-frame-wrap--ready .agentic-iframe {
+  display: block;
+}
+
+.agentic-preview-frame-wrap:not(.agentic-preview-frame-wrap--ready) .agentic-iframe {
+  display: none;
+}
+
+.agentic-iframe {
+  width: 100%;
+  min-height: 360px;
+  height: min(52vh, 520px);
+  border: none;
+  background: #fff;
+}
+
+.agentic-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.agentic-empty-icon {
+  font-size: 2rem;
+  opacity: 0.35;
+  margin-bottom: 8px;
+}
