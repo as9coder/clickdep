@@ -129,6 +129,9 @@ Views.settings = async function (container) {
   try { ghConfig = await API.get('/api/auth/github/config'); } catch (e) { }
   let baseDomain = '';
   try { const d = await API.get('/api/auth/domain'); baseDomain = d.domain || ''; } catch (e) { }
+  let dashOriginStored = '';
+  try { dashOriginStored = localStorage.getItem('clickdep_dashboard_origin') || ''; } catch (e) { }
+  const escapedDash = dashOriginStored.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
   container.innerHTML = `
     <div class="page-header"><h1>Settings</h1></div>
@@ -202,6 +205,19 @@ Views.settings = async function (container) {
       <div class="text-xs text-muted" style="margin-top:8px">
         Requires: Cloudflare Tunnel running + wildcard DNS (*.yourdomain.com → tunnel)
       </div>
+    </div>
+
+    <div class="settings-section" style="margin-top:16px">
+      <h3>🏠 Dashboard URL (API)</h3>
+      <p>Base domain above is for <strong>deployed apps</strong> (e.g. <code>app.${baseDomain || 'yourdomain.com'}</code>). If you open this UI by <strong>server IP</strong>, <strong>hostname</strong>, or a URL that is <em>not</em> the apex, set it here so <code>/api</code> and Agentic work from project subdomains.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:560px;align-items:flex-end">
+        <div class="form-group" style="flex:1;min-width:260px;margin:0">
+          <label>Dashboard origin</label>
+          <input type="url" id="settings-dashboard-origin" placeholder="https://clickdep.dev or http://192.168.1.5:3000" value="${escapedDash}" autocomplete="off">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="settings-dashboard-origin-save" style="height:42px">Save</button>
+      </div>
+      <p class="text-xs text-muted" style="margin-top:8px">Saved in this browser. Leave empty to auto-detect from the address bar when you open the dashboard (unless you saved manually before).</p>
     </div>
 
     <div class="settings-section" style="margin-top:16px">
@@ -390,6 +406,28 @@ Views.settings = async function (container) {
       App.toast(domain ? `Domain set to ${domain}` : 'Domain cleared', 'success');
       Views.settings(container);
     } catch (e) { App.toast(e.message, 'error'); }
+  });
+
+  container.querySelector('#settings-dashboard-origin-save')?.addEventListener('click', () => {
+    const raw = container.querySelector('#settings-dashboard-origin')?.value.trim() || '';
+    if (!raw) {
+      try {
+        localStorage.removeItem('clickdep_dashboard_origin');
+        localStorage.removeItem('clickdep_dashboard_origin_manual');
+      } catch (e) { }
+      App.toast('Cleared — dashboard origin will auto-detect on next load', 'success');
+      Views.settings(container);
+      return;
+    }
+    try {
+      const u = new URL(raw);
+      localStorage.setItem('clickdep_dashboard_origin', u.origin);
+      localStorage.setItem('clickdep_dashboard_origin_manual', '1');
+      App.toast('Dashboard URL saved', 'success');
+      Views.settings(container);
+    } catch (e) {
+      App.toast('Enter a valid URL (include http:// or https://)', 'error');
+    }
   });
 
   // Agentic / OpenRouter

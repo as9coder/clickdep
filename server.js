@@ -317,6 +317,8 @@ function isOriginAllowedForApi(origin) {
         const h = u.hostname.toLowerCase();
         if (h === 'localhost' || h === '127.0.0.1') return true;
         if (h.endsWith('.localhost')) return true;
+        // Dashboard opened by raw IPv4 (e.g. http://10.0.0.5:3000)
+        if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return true;
         const bd = getBaseDomain();
         if (!bd) {
             return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost');
@@ -374,18 +376,29 @@ app.use('/api', (req, res, next) => {
     res.status(401).json({ error: 'Invalid token' });
 });
 
-function sendIndexHtml(res) {
+function sendIndexHtml(req, res) {
     const indexPath = path.join(__dirname, 'public', 'index.html');
     let html = fs.readFileSync(indexPath, 'utf8');
     const bd = getBaseDomain() || '';
     const safe = bd.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     html = html.replace(/__CLICKDEP_BASE_DOMAIN__/g, safe);
+
+    const xfHost = (req.get('x-forwarded-host') || '').split(',')[0].trim();
+    const host = xfHost || req.headers.host || '';
+    let xfProto = (req.get('x-forwarded-proto') || '').split(',')[0].trim().toLowerCase();
+    if (xfProto !== 'http' && xfProto !== 'https') {
+        xfProto = (req.protocol === 'https' ? 'https' : 'http');
+    }
+    const dashboardOrigin = host ? `${xfProto}://${host}` : '';
+    const safeOrigin = dashboardOrigin.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    html = html.replace(/__CLICKDEP_DASHBOARD_ORIGIN__/g, safeOrigin);
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
 }
 
 // Serve dashboard HTML with injected base domain (must be before express.static, which would otherwise serve index.html raw)
-app.get(['/', '/index.html'], (req, res) => sendIndexHtml(res));
+app.get(['/', '/index.html'], (req, res) => sendIndexHtml(req, res));
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -423,7 +436,7 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API route not found' });
     }
-    sendIndexHtml(res);
+    sendIndexHtml(req, res);
 });
 
 // ─── Metrics Collection (every 30s) ──────────

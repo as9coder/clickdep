@@ -71,6 +71,10 @@ window.App = {
             try { localStorage.setItem('clickdep_base_domain', this.baseDomain); } catch (e) { }
         } catch (e) { this.baseDomain = ''; }
 
+        if (typeof API.recordDashboardOrigin === 'function') {
+            API.recordDashboardOrigin();
+        }
+
         WS.connect();
 
         this.bindRouter();

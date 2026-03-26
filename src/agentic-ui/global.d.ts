@@ -8,6 +8,7 @@ declare global {
     };
     API?: {
       resolveUrl: (path: string) => string;
+      recordDashboardOrigin?: () => void;
     };
   }
 }

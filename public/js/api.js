@@ -1,13 +1,78 @@
 // ─── API Client & WebSocket Manager ─────────
 /**
- * When the dashboard is opened on a project subdomain (e.g. foo.base.com), relative /api
- * requests would hit the wrong host. Route API calls to the apex dashboard host instead.
+ * Deployed apps use *.baseDomain; the dashboard may be opened by IP, hostname, or apex.
+ * For project subdomains, /api must target the real dashboard origin (stored in meta + localStorage).
  */
+function isProjectSubdomain(hostname, bd) {
+    if (!bd || typeof hostname !== 'string') return false;
+    const h = hostname.toLowerCase();
+    const bdLower = bd.toLowerCase();
+    if (h === bdLower || h === 'www.' + bdLower) return false;
+    if (h === 'localhost' || h === '127.0.0.1') return false;
+    return h.endsWith('.' + bdLower);
+}
+
+function getDashboardOriginResolved() {
+    if (typeof localStorage !== 'undefined') {
+        const s = (localStorage.getItem('clickdep_dashboard_origin') || '').trim();
+        if (s) {
+            try {
+                return new URL(s).origin;
+            } catch (e) { /* ignore */ }
+        }
+    }
+    if (typeof document !== 'undefined') {
+        const m = document.querySelector('meta[name="clickdep-dashboard-origin"]');
+        const o = (m && m.getAttribute('content') || '').trim();
+        if (o && !o.startsWith('__')) {
+            try {
+                return new URL(o).origin;
+            } catch (e) { /* ignore */ }
+        }
+    }
+    return '';
+}
+
+function recordDashboardOrigin() {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem('clickdep_dashboard_origin_manual') === '1') return;
+    const bd =
+        (window.App && window.App.baseDomain) ||
+        localStorage.getItem('clickdep_base_domain') ||
+        '';
+    let bdMeta = '';
+    if (typeof document !== 'undefined') {
+        const m = document.querySelector('meta[name="clickdep-base-domain"]');
+        bdMeta = (m && m.getAttribute('content')) || '';
+        if (bdMeta.startsWith('__')) bdMeta = '';
+        bdMeta = bdMeta.trim();
+    }
+    const effectiveBd = (bd || bdMeta || '').trim();
+    const h = location.hostname;
+    if (h.endsWith('.localhost')) {
+        try { localStorage.setItem('clickdep_dashboard_origin', location.origin); } catch (e) { }
+        return;
+    }
+    if (effectiveBd && isProjectSubdomain(h, effectiveBd)) return;
+    try { localStorage.setItem('clickdep_dashboard_origin', location.origin); } catch (e) { }
+}
+
+(function syncDashboardOriginFromMeta() {
+    if (typeof document === 'undefined' || typeof localStorage === 'undefined') return;
+    if (localStorage.getItem('clickdep_dashboard_origin_manual') === '1') return;
+    const m = document.querySelector('meta[name="clickdep-dashboard-origin"]');
+    const o = (m && m.getAttribute('content') || '').trim();
+    if (!o || o.startsWith('__')) return;
+    try {
+        const origin = new URL(o).origin;
+        localStorage.setItem('clickdep_dashboard_origin', origin);
+    } catch (e) { /* ignore */ }
+})();
+
 function resolveApiUrl(path) {
     if (typeof window === 'undefined' || !path || typeof path !== 'string') return path;
     if (/^https?:\/\//i.test(path)) return path;
     if (!path.startsWith('/')) return path;
-    // Console: localStorage.setItem('clickdep_force_same_origin','1') to disable apex redirect (debug)
     if (typeof localStorage !== 'undefined' && localStorage.getItem('clickdep_force_same_origin') === '1') {
         return path;
     }
@@ -32,6 +97,10 @@ function resolveApiUrl(path) {
         const bdLower = bd.toLowerCase();
         if (h !== bdLower && h !== 'localhost' && h !== '127.0.0.1') {
             if (h.endsWith('.' + bdLower)) {
+                const dash = getDashboardOriginResolved();
+                if (dash) {
+                    return `${dash}${path}`;
+                }
                 return `${proto}//${bdLower}${portSuffix}${path}`;
             }
         }
@@ -56,6 +125,7 @@ function wsHostForDashboard() {
 window.API = {
     token: localStorage.getItem('clickdep_token') || '',
     resolveUrl: resolveApiUrl,
+    recordDashboardOrigin,
 
     async request(method, url, body) {
         const opts = {
@@ -88,7 +158,7 @@ window.API = {
         const looksHtml = ct.includes('text/html') || /^\s*<(!DOCTYPE|html)/i.test(trimmed);
         if (looksHtml) {
             throw new Error(
-                `HTTP ${res.status}: page HTML instead of API data. Open ClickDep on your main dashboard URL (apex domain or localhost), not a deployed app hostname.`,
+                `HTTP ${res.status}: got HTML instead of JSON. Set Settings → Dashboard URL to where you open ClickDep (IP or hostname), or open the dashboard at that URL once so it can be remembered.`,
             );
         }
 
