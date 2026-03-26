@@ -294,6 +294,8 @@ const BucketViews = {
               if (ev.lengthComputable) {
                 const pct = Math.round((ev.loaded / ev.total) * 100);
                 progressBar.style.width = `${pct}%`;
+                const mb = (n) => (n / (1024 * 1024)).toFixed(1);
+                progressText.textContent = `${pct}% · ${mb(ev.loaded)} / ${mb(ev.total)} MB`;
               }
             };
 

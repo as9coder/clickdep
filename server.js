@@ -12,6 +12,10 @@ const mediaSubdomain = require('./src/media-subdomain');
 
 const app = express();
 const server = http.createServer(app);
+// Node 18+ defaults can abort huge uploads. Behind nginx/Caddy, also raise proxy read timeouts + client_max_body_size.
+server.requestTimeout = 0;
+server.headersTimeout = 0;
+server.setTimeout(0);
 const httpProxy = require('http-proxy');
 
 // ─── Wildcard Subdomain Reverse Proxy ────────

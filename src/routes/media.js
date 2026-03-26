@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const busboy = require('busboy');
+const { pipeline } = require('stream/promises');
 const { v4: uuidv4 } = require('uuid');
 const { stmts, DATA_DIR } = require('../db');
 
 const MEDIA_DIR = path.join(DATA_DIR, 'media');
 const MAX_UPLOAD = 500 * 1024 * 1024; // 500MB — videos / large files
+
+/** Larger buffers = fewer syscalls when writing big videos to disk */
+const WRITE_HWM = 4 * 1024 * 1024;
+const PARSE_HWM = 1024 * 1024;
 
 function sanitizePart(str, maxLen) {
   const s = String(str || '')
@@ -57,29 +62,9 @@ function generateMediaSlug(bucketName, originalFilename) {
   throw new Error('Could not allocate a unique link. Try again.');
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const bid = req._bucketId;
-    if (!bid) return cb(new Error('bucketId missing'));
-    const dir = path.join(MEDIA_DIR, bid);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${crypto.randomUUID()}${ext}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: MAX_UPLOAD },
-});
-
-function embedUrlForSlug(slug, baseDomain, originalName) {
+function embedUrlForSlug(slug, baseDomain) {
   if (!baseDomain) return slug;
-  const root = `https://${slug}.${baseDomain}/`;
-  return root;
+  return `https://${slug}.${baseDomain}/`;
 }
 
 function getBaseDomainValue() {
@@ -139,9 +124,9 @@ router.delete('/buckets/:id', (req, res) => {
   }
 });
 
-// ─── Upload (multipart file; bucketId required as query — parsed before multer destination) ─────
+// ─── Upload: streaming multipart (busboy + large write buffer — faster than multer for big files) ─────
 
-router.post('/upload', (req, res, next) => {
+router.post('/upload', (req, res) => {
   const bucketId = req.query && req.query.bucketId;
   if (!bucketId || typeof bucketId !== 'string') {
     return res.status(400).json({ error: 'Select a bucket and pass bucketId as a query parameter (e.g. ?bucketId=…).' });
@@ -150,51 +135,121 @@ router.post('/upload', (req, res, next) => {
   if (!bucket) {
     return res.status(400).json({ error: 'Invalid or unknown bucket.' });
   }
-  req._bucketId = bucket.id;
-  next();
-}, upload.single('file'), (req, res) => {
+
+  let bb;
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-    const bucket = stmts.getBucket.get(req._bucketId);
-    if (!bucket) return res.status(400).json({ error: 'Bucket missing.' });
-
-    const relPath = path.join(bucket.id, req.file.filename);
-    const id = uuidv4();
-    const slug = generateMediaSlug(bucket.name, req.file.originalname);
-
-    stmts.insertMedia.run(
-      id,
-      slug,
-      req.file.originalname,
-      req.file.mimetype || 'application/octet-stream',
-      req.file.size,
-      relPath,
-      'embed',
-      bucket.id
-    );
-
-    const media = stmts.getMediaById.get(id);
-    const baseDomain = getBaseDomainValue();
-
-    res.json({
-      ...media,
-      embed_url: embedUrlForSlug(slug, baseDomain, req.file.originalname),
+    bb = busboy({
+      headers: req.headers,
+      limits: {
+        fileSize: MAX_UPLOAD,
+        files: 1,
+        fields: 2,
+        parts: 5,
+      },
+      highWaterMark: PARSE_HWM,
+      fileHwm: WRITE_HWM,
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    return res.status(400).json({ error: e.message });
   }
-});
 
-router.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: `File too large. Maximum size is ${MAX_UPLOAD / (1024 * 1024)}MB.` });
+  let responded = false;
+  const safeJson = (status, body) => {
+    if (responded) return;
+    responded = true;
+    res.status(status).json(body);
+  };
+
+  let fileHandled = false;
+  let destPath = null;
+
+  bb.on('file', (fieldname, fileStream, info) => {
+    if (fieldname !== 'file') {
+      fileStream.resume();
+      return;
     }
-    return res.status(400).json({ error: err.message });
-  }
-  if (err) return res.status(400).json({ error: err.message });
-  next();
+    if (fileHandled) {
+      fileStream.resume();
+      return;
+    }
+    fileHandled = true;
+
+    const origName = (info.filename && String(info.filename)) || 'upload.bin';
+    const mime = info.mimeType || 'application/octet-stream';
+    const ext = path.extname(origName).toLowerCase();
+    const destName = `${crypto.randomUUID()}${ext}`;
+    const dir = path.join(MEDIA_DIR, bucket.id);
+    destPath = path.join(dir, destName);
+
+    const writeStream = fs.createWriteStream(destPath, { highWaterMark: WRITE_HWM });
+
+    fileStream.on('limit', () => {
+      writeStream.destroy();
+      try {
+        if (destPath && fs.existsSync(destPath)) fs.unlinkSync(destPath);
+      } catch (e) { /* ignore */ }
+      safeJson(413, { error: `File too large. Maximum size is ${MAX_UPLOAD / (1024 * 1024)}MB.` });
+    });
+
+    (async () => {
+      try {
+        await fs.promises.mkdir(dir, { recursive: true });
+        await pipeline(fileStream, writeStream);
+      } catch (e) {
+        try {
+          if (destPath && fs.existsSync(destPath)) fs.unlinkSync(destPath);
+        } catch (e2) { /* ignore */ }
+        if (!responded) safeJson(500, { error: e.message || 'Upload failed' });
+        return;
+      }
+
+      const st = await fs.promises.stat(destPath);
+      const slug = generateMediaSlug(bucket.name, origName);
+      const id = uuidv4();
+      stmts.insertMedia.run(
+        id,
+        slug,
+        origName,
+        mime,
+        st.size,
+        path.join(bucket.id, destName),
+        'embed',
+        bucket.id
+      );
+      const media = stmts.getMediaById.get(id);
+      const baseDomain = getBaseDomainValue();
+      if (!responded) {
+        responded = true;
+        res.json({
+          ...media,
+          embed_url: embedUrlForSlug(slug, baseDomain),
+        });
+      }
+    })().catch((e) => {
+      try {
+        if (destPath && fs.existsSync(destPath)) fs.unlinkSync(destPath);
+      } catch (e2) { /* ignore */ }
+      if (!responded) safeJson(500, { error: e.message || 'Upload failed' });
+    });
+  });
+
+  bb.on('error', (err) => {
+    if (!responded) safeJson(400, { error: err.message });
+  });
+
+  bb.on('close', () => {
+    if (!fileHandled && !responded) {
+      safeJson(400, { error: 'No file uploaded' });
+    }
+  });
+
+  req.on('aborted', () => {
+    try {
+      bb.destroy();
+    } catch (e) { /* ignore */ }
+  });
+
+  req.pipe(bb);
 });
 
 router.get('/', (req, res) => {
@@ -205,7 +260,7 @@ router.get('/', (req, res) => {
 
     const enriched = files.map((f) => ({
       ...f,
-      embed_url: embedUrlForSlug(f.slug, baseDomain, f.original_name),
+      embed_url: embedUrlForSlug(f.slug, baseDomain),
     }));
 
     res.json({ files: enriched, stats });
