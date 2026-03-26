@@ -205,6 +205,23 @@ Views.settings = async function (container) {
     </div>
 
     <div class="settings-section" style="margin-top:16px">
+      <h3>✨ Agentic Code (OpenRouter)</h3>
+      <p>API key and model for the <a href="#/agentic">Agentic Code</a> page. Keys from <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a>.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;max-width:560px;align-items:flex-end">
+        <div class="form-group" style="flex:1;min-width:220px;margin:0">
+          <label>OpenRouter API key</label>
+          <input type="password" id="settings-openrouter-key" placeholder="sk-or-..." autocomplete="off">
+        </div>
+        <div class="form-group" style="flex:1;min-width:200px;margin:0">
+          <label>Model</label>
+          <input type="text" id="settings-openrouter-model" placeholder="minimax/minimax-m2.7">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="settings-openrouter-save" style="height:42px">Save</button>
+      </div>
+      <p id="settings-openrouter-status" class="text-sm text-muted" style="margin-top:10px"></p>
+    </div>
+
+    <div class="settings-section" style="margin-top:16px">
       <h3>🔐 Dashboard Password</h3>
       <p>${authStatus.hasPassword ? 'Password is set. Change it below.' : 'No password set — dashboard is open'}</p>
       <div class="form-row" style="max-width:500px">
@@ -373,6 +390,45 @@ Views.settings = async function (container) {
       App.toast(domain ? `Domain set to ${domain}` : 'Domain cleared', 'success');
       Views.settings(container);
     } catch (e) { App.toast(e.message, 'error'); }
+  });
+
+  // Agentic / OpenRouter
+  (async () => {
+    try {
+      const c = await API.get('/api/agent/config');
+      const st = container.querySelector('#settings-openrouter-status');
+      const modelIn = container.querySelector('#settings-openrouter-model');
+      if (modelIn) modelIn.value = c.model || 'minimax/minimax-m2.7';
+      if (st) {
+        st.textContent = c.hasKey
+          ? `Key saved (${c.keyHint || '****'}). Model: ${c.model || 'minimax/minimax-m2.7'}`
+          : 'No API key configured yet.';
+      }
+    } catch (e) {
+      const st = container.querySelector('#settings-openrouter-status');
+      if (st) st.textContent = e.message || 'Could not load agent config';
+    }
+  })();
+
+  container.querySelector('#settings-openrouter-save')?.addEventListener('click', async () => {
+    const apiKey = container.querySelector('#settings-openrouter-key')?.value.trim() ?? '';
+    const model =
+      container.querySelector('#settings-openrouter-model')?.value.trim() || 'minimax/minimax-m2.7';
+    try {
+      await API.put('/api/agent/config', { apiKey, model });
+      const keyEl = container.querySelector('#settings-openrouter-key');
+      if (keyEl) keyEl.value = '';
+      App.toast('Agentic settings saved', 'success');
+      const c = await API.get('/api/agent/config');
+      const st = container.querySelector('#settings-openrouter-status');
+      if (st) {
+        st.textContent = c.hasKey
+          ? `Key saved (${c.keyHint || '****'}). Model: ${c.model || model}`
+          : 'No API key configured yet.';
+      }
+    } catch (e) {
+      App.toast(e.message, 'error');
+    }
   });
 
   // Password

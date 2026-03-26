@@ -1,31 +1,17 @@
-var AgenticCode=(()=>{var k=Object.defineProperty;var M=Object.getOwnPropertyDescriptor;var j=Object.getOwnPropertyNames;var _=Object.prototype.hasOwnProperty;var $=(n,t)=>{for(var s in t)k(n,s,{get:t[s],enumerable:!0})},I=(n,t,s,i)=>{if(t&&typeof t=="object"||typeof t=="function")for(let a of j(t))!_.call(n,a)&&a!==s&&k(n,a,{get:()=>t[a],enumerable:!(i=M(t,a))||i.enumerable});return n};var N=n=>I(k({},"__esModule",{value:!0}),n);var K={};$(K,{mount:()=>B});async function T(n,t,s){let i=localStorage.getItem("clickdep_token")||"",a=await fetch(`/api/agent/sessions/${encodeURIComponent(n)}/chat`,{method:"POST",headers:{"Content-Type":"application/json",...i?{Authorization:`Bearer ${i}`}:{}},body:JSON.stringify({message:t})});if(!a.ok){let c=a.statusText;try{let l=await a.json();l.error&&(c=l.error)}catch{}throw new Error(c)}let h=a.body?.getReader();if(!h)throw new Error("No response body");let w=new TextDecoder,g="";for(;;){let{done:c,value:l}=await h.read();if(c)break;g+=w.decode(l,{stream:!0});let y=g.split(`
+var AgenticCode=(()=>{var x=Object.defineProperty;var R=Object.getOwnPropertyDescriptor;var O=Object.getOwnPropertyNames;var W=Object.prototype.hasOwnProperty;var B=(n,t)=>{for(var i in t)x(n,i,{get:t[i],enumerable:!0})},D=(n,t,i,a)=>{if(t&&typeof t=="object"||typeof t=="function")for(let r of O(t))!W.call(n,r)&&r!==i&&x(n,r,{get:()=>t[r],enumerable:!(a=R(t,r))||a.enumerable});return n};var J=n=>D(x({},"__esModule",{value:!0}),n);var Q={};B(Q,{mount:()=>G});async function $(n,t,i){let a=localStorage.getItem("clickdep_token")||"",r=await fetch(`/api/agent/sessions/${encodeURIComponent(n)}/chat`,{method:"POST",headers:{"Content-Type":"application/json",...a?{Authorization:`Bearer ${a}`}:{}},body:JSON.stringify({message:t})});if(!r.ok){let d=r.statusText;try{let o=await r.json();o.error&&(d=o.error)}catch{}throw new Error(d)}let w=r.body?.getReader();if(!w)throw new Error("No response body");let S=new TextDecoder,y="";for(;;){let{done:d,value:o}=await w.read();if(d)break;y+=S.decode(o,{stream:!0});let p=y.split(`
 
-`);g=y.pop()??"";for(let S of y){let r=S.split(`
-`);for(let m of r){if(!m.startsWith("data: "))continue;let p=m.slice(6).trim();if(p)try{let v=JSON.parse(p);s(v)}catch{}}}}if(g.trim())for(let c of g.split(`
-`)){if(!c.startsWith("data: "))continue;let l=c.slice(6).trim();if(l)try{s(JSON.parse(l))}catch{}}}var P=["Scaffold a Vite + React + TypeScript app with a clean landing page and deploy it to ClickDep.","Build a single-page dashboard with a sidebar, three KPI cards, and a placeholder chart area.","Create a static HTML/CSS portfolio with dark theme and responsive grid."],b="clickdep_agentic_session";async function q(n){let t=localStorage.getItem("clickdep_token")||"",s=await fetch(n,{headers:{...t?{Authorization:`Bearer ${t}`}:{}}}),i=await s.json();if(!s.ok)throw new Error(i.error||"Request failed");return i}async function O(n,t){let s=localStorage.getItem("clickdep_token")||"",i=await fetch(n,{method:"PUT",headers:{"Content-Type":"application/json",...s?{Authorization:`Bearer ${s}`}:{}},body:JSON.stringify(t)}),a=await i.json();if(!i.ok)throw new Error(a.error||"Request failed")}async function L(n,t){let s=localStorage.getItem("clickdep_token")||"",i=await fetch(n,{method:"POST",headers:{"Content-Type":"application/json",...s?{Authorization:`Bearer ${s}`}:{}},body:t?JSON.stringify(t):void 0}),a=await i.json();if(!i.ok)throw new Error(a.error||"Request failed");return a}function d(n){let t=document.createElement("div");return t.textContent=n,t.innerHTML}function R(n){try{let t=JSON.stringify(n,null,2);return t.length>4e3?t.slice(0,4e3)+`
-\u2026`:t}catch{return String(n)}}function A(n){n.innerHTML="",n.classList.add("agentic-page");let t=document.createElement("div");t.className="agentic-root agentic-root--full",t.innerHTML=`
+`);y=p.pop()??"";for(let L of p){let k=L.split(`
+`);for(let T of k){if(!T.startsWith("data: "))continue;let m=T.slice(6).trim();if(m)try{let c=JSON.parse(m);i(c)}catch{}}}}if(y.trim())for(let d of y.split(`
+`)){if(!d.startsWith("data: "))continue;let o=d.slice(6).trim();if(o)try{i(JSON.parse(o))}catch{}}}var U=["A landing page for a coffee roastery with hero, menu section, and contact form.","A minimal dashboard with sidebar, KPI cards, and a chart placeholder.","A portfolio site with project grid and dark theme.","A single-page calculator with keyboard support."],A="clickdep_agentic_session";async function z(n){let t=localStorage.getItem("clickdep_token")||"",i=await fetch(n,{headers:{...t?{Authorization:`Bearer ${t}`}:{}}}),a=await i.json();if(!i.ok)throw new Error(a.error||"Request failed");return a}async function I(n,t){let i=localStorage.getItem("clickdep_token")||"",a=await fetch(n,{method:"POST",headers:{"Content-Type":"application/json",...i?{Authorization:`Bearer ${i}`}:{}},body:t?JSON.stringify(t):void 0}),r=await a.json();if(!a.ok)throw new Error(r.error||"Request failed");return r}function u(n){let t=document.createElement("div");return t.textContent=n,t.innerHTML}function K(n){try{let t=JSON.stringify(n,null,2);return t.length>4e3?t.slice(0,4e3)+`
+\u2026`:t}catch{return String(n)}}function F(n){if(n.status!=="running"||!n.port)return null;let t=window.App?.baseDomain;return t?`http://${n.name}.${t}/`:`http://localhost:${n.port}/`}function P(n){n.innerHTML="",n.classList.add("agentic-page");let t=document.createElement("div");t.className="agentic-root",t.innerHTML=`
     <div class="agentic-hero">
-      <div class="agentic-badge">Agentic Code \xB7 OpenRouter</div>
-      <h1 class="agentic-title">Build &amp; deploy web apps with an agent</h1>
+      <div class="agentic-badge">Agentic \xB7 OpenRouter</div>
+      <h1 class="agentic-title">Build a web app from one prompt</h1>
       <p class="agentic-sub">
-        Filesystem, shell, background jobs, web search, and one-click deploy to Web Hosting (same dashboard as manual deploys). Configure your OpenRouter key below.
+        Describe what you want; the agent edits an isolated workspace, runs commands, and can deploy to Web Hosting.
+        Configure your <strong>OpenRouter API key</strong> and <strong>model</strong> in
+        <a href="#/settings">Settings</a>.
       </p>
-    </div>
-
-    <div class="agentic-config settings-card" id="agentic-config">
-      <h3 class="agentic-label">OpenRouter</h3>
-      <div class="agentic-config-row">
-        <div class="form-group" style="flex:1;min-width:200px;margin:0">
-          <label>API key</label>
-          <input type="password" id="agentic-api-key" placeholder="sk-or-..." autocomplete="off">
-        </div>
-        <div class="form-group" style="flex:1;min-width:200px;margin:0">
-          <label>Model</label>
-          <input type="text" id="agentic-model" placeholder="minimax/minimax-m2.7">
-        </div>
-        <button type="button" class="btn btn-primary" id="agentic-save-config" style="height:42px;align-self:flex-end">Save</button>
-      </div>
-      <p id="agentic-config-status" class="text-sm text-muted" style="margin-top:8px"></p>
     </div>
 
     <div class="agentic-toolbar">
@@ -34,21 +20,53 @@ var AgenticCode=(()=>{var k=Object.defineProperty;var M=Object.getOwnPropertyDes
       <a href="#/hosting" class="btn btn-ghost btn-sm" style="margin-left:auto">Web Hosting</a>
     </div>
 
-    <div class="agentic-chat-wrap">
-      <div id="agentic-log" class="agentic-log" aria-live="polite"></div>
-    </div>
+    <div class="agentic-layout">
+      <section class="agentic-panel agentic-panel--prompt" aria-labelledby="agentic-prompt-label">
+        <div class="agentic-chat-scroll">
+          <div id="agentic-log" class="agentic-log" aria-live="polite"></div>
+        </div>
+        <label id="agentic-prompt-label" class="agentic-label" for="agentic-input">Message</label>
+        <textarea
+          id="agentic-input"
+          class="agentic-textarea agentic-input-main"
+          rows="8"
+          placeholder="Example: Scaffold a static site and deploy it with deploy_to_clickdep when ready."
+          spellcheck="true"
+        ></textarea>
+        <div class="agentic-presets" role="group" aria-label="Quick prompts">
+          <span class="agentic-presets-label">Try</span>
+          <div id="agentic-chips" class="agentic-chips"></div>
+        </div>
+        <div class="agentic-actions">
+          <button type="button" id="agentic-send" class="btn btn-primary agentic-btn-primary">
+            <span class="agentic-btn-text">Send</span>
+            <span class="agentic-btn-spinner hidden" aria-hidden="true"></span>
+          </button>
+          <button type="button" id="agentic-clear" class="btn btn-ghost">Clear</button>
+        </div>
+        <p class="agentic-hint text-sm text-muted">
+          After a successful deploy, the live site can appear in the preview when the container is running.
+        </p>
+      </section>
 
-    <div class="agentic-compose">
-      <label class="agentic-label" for="agentic-input">Message</label>
-      <textarea id="agentic-input" class="agentic-textarea agentic-input-main" rows="4" placeholder="Describe what to build, or ask the agent to run deploy_to_clickdep with a project_name when ready\u2026"></textarea>
-      <div class="agentic-presets" style="margin-top:10px">
-        <span class="agentic-presets-label">Try</span>
-        <div id="agentic-chips" class="agentic-chips"></div>
-      </div>
-      <div class="agentic-actions" style="margin-top:12px">
-        <button type="button" id="agentic-send" class="btn btn-primary">Send</button>
-        <span class="text-xs text-muted">Ctrl+Enter to send</span>
-      </div>
+      <section class="agentic-panel agentic-panel--preview" aria-labelledby="agentic-preview-label">
+        <div class="agentic-preview-header">
+          <h2 id="agentic-preview-label" class="agentic-preview-title">Live preview</h2>
+          <span id="agentic-status" class="agentic-status agentic-status--idle">Idle</span>
+        </div>
+        <div id="agentic-frame-wrap" class="agentic-preview-frame-wrap">
+          <iframe
+            id="agentic-iframe"
+            class="agentic-iframe"
+            title="Deployed site preview"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          ></iframe>
+          <div id="agentic-empty" class="agentic-empty">
+            <div class="agentic-empty-icon">\u25C7</div>
+            <p id="agentic-empty-text">Send a message to chat with the agent. After deploy, the site may load here.</p>
+          </div>
+        </div>
+      </section>
     </div>
-  `,n.appendChild(t);let s=t.querySelector("#agentic-log"),i=t.querySelector("#agentic-input"),a=t.querySelector("#agentic-send"),h=t.querySelector("#agentic-new-session"),w=t.querySelector("#agentic-session-label"),g=t.querySelector("#agentic-save-config"),c=t.querySelector("#agentic-api-key"),l=t.querySelector("#agentic-model"),y=t.querySelector("#agentic-config-status"),S=t.querySelector("#agentic-chips");P.forEach(e=>{let o=document.createElement("button");o.type="button",o.className="agentic-chip",o.textContent=e.length>52?`${e.slice(0,50)}\u2026`:e,o.title=e,o.addEventListener("click",()=>{i.value=e,i.focus()}),S.appendChild(o)});let r=localStorage.getItem(b),m=!1,p=()=>{w.textContent=r?`Session: ${r.slice(0,8)}\u2026`:"No session"};p();let v=async()=>{try{let e=await q("/api/agent/config");y.textContent=e.hasKey?`Key saved (${e.keyHint||"****"}). Model: ${e.model}`:"Add an API key from openrouter.ai",l.value=e.model||"minimax/minimax-m2.7"}catch(e){y.textContent=e.message}};v(),g.addEventListener("click",async()=>{try{await O("/api/agent/config",{apiKey:c.value.trim(),model:l.value.trim()||"minimax/minimax-m2.7"}),c.value="",window.App?.toast?.("Settings saved","success"),await v()}catch(e){window.App?.toast?.(e.message,"error")}});let H=async()=>r||(r=(await L("/api/agent/sessions",{title:"Agentic"})).id,localStorage.setItem(b,r),p(),r),u=e=>{let o=document.createElement("div");o.className="agentic-msg-block",o.innerHTML=e,s.appendChild(o),s.scrollTop=s.scrollHeight},C=e=>{if(e.type==="assistant")u(`<div class="agentic-msg agentic-msg--assistant"><div class="agentic-msg-role">Agent</div><pre class="agentic-msg-body">${d(e.content||"")}</pre></div>`);else if(e.type==="tool_start")u(`<div class="agentic-msg agentic-msg--tool"><div class="agentic-msg-role">Tool \xB7 ${d(e.name)}</div><div class="agentic-msg-meta mono">${d(e.args_preview||"")}</div></div>`);else if(e.type==="tool_end"){let o=R(e.result),f="";if(e.result&&typeof e.result=="object"&&e.result!==null&&"project_id"in e.result){let x=e.result.project_id;x&&(f=`<p class="agentic-deploy-link"><a href="#/project/${x}">Open in Web Hosting \u2192</a></p>`)}u(`<div class="agentic-msg agentic-msg--toolresult"><div class="agentic-msg-role">Result \xB7 ${d(e.name)}</div><pre class="agentic-msg-body agentic-msg-json">${d(o)}</pre>${f}</div>`)}else e.type==="error"&&u(`<div class="agentic-msg agentic-msg--error">${d(e.message)}</div>`)},E=async()=>{let e=i.value.trim();if(!(!e||m)){m=!0,a.disabled=!0,u(`<div class="agentic-msg agentic-msg--user"><div class="agentic-msg-role">You</div><pre class="agentic-msg-body">${d(e)}</pre></div>`),i.value="";try{let o=await H();await T(o,e,f=>{f.type!=="done"&&C(f)})}catch(o){u(`<div class="agentic-msg agentic-msg--error">${d(o.message)}</div>`)}finally{m=!1,a.disabled=!1}}};return a.addEventListener("click",()=>void E()),i.addEventListener("keydown",e=>{(e.ctrlKey||e.metaKey)&&e.key==="Enter"&&(e.preventDefault(),E())}),h.addEventListener("click",async()=>{if(confirm("Start a new session? Current thread is left on the server.")){r=null,localStorage.removeItem(b),p(),s.innerHTML="";try{r=(await L("/api/agent/sessions",{title:"Agentic"})).id,localStorage.setItem(b,r),p(),window.App?.toast?.("New session","success")}catch(e){window.App?.toast?.(e.message,"error")}}}),()=>{n.classList.remove("agentic-page"),n.innerHTML=""}}var B=A;return N(K);})();
+  `,n.appendChild(t);let i=t.querySelector("#agentic-log"),a=t.querySelector("#agentic-input"),r=t.querySelector("#agentic-send"),w=t.querySelector("#agentic-clear"),S=t.querySelector("#agentic-new-session"),y=t.querySelector("#agentic-session-label"),d=t.querySelector("#agentic-chips"),o=t.querySelector("#agentic-iframe"),p=t.querySelector("#agentic-frame-wrap"),L=t.querySelector("#agentic-status"),k=t.querySelector(".agentic-btn-text"),T=t.querySelector(".agentic-btn-spinner"),m=t.querySelector("#agentic-empty-text");U.forEach(e=>{let s=document.createElement("button");s.type="button",s.className="agentic-chip",s.textContent=e.length>48?`${e.slice(0,46)}\u2026`:e,s.title=e,s.addEventListener("click",()=>{a.value=e,a.focus()}),d.appendChild(s)});let c=localStorage.getItem(A),H=!1,b=null,E=()=>{y.textContent=c?`Session: ${c.slice(0,8)}\u2026`:"No session"};E();let g=(e,s)=>{let l={idle:"Idle",busy:"Working\u2026",ready:"Live",pending:"Waiting for deploy\u2026"};L.textContent=s||l[e];let h=e==="ready"?"agentic-status--ready":e==="busy"||e==="pending"?"agentic-status--busy":"agentic-status--idle";L.className=`agentic-status ${h}`},f=()=>{b&&(clearInterval(b),b=null)},_=async e=>{f(),g("pending","Waiting for site\u2026"),m.textContent="Deploy queued or building \u2014 preview appears when the container is running.",p.classList.remove("agentic-preview-frame-wrap--ready"),o.removeAttribute("src");let s=async()=>{try{let h=await z(`/api/projects/${encodeURIComponent(e)}`),j=F(h);j&&(o.src=j,p.classList.add("agentic-preview-frame-wrap--ready"),g("ready"),f(),m.textContent="Send a message to chat with the agent. After deploy, the site may load here.")}catch{}};await s();let l=0;b=setInterval(()=>{l++,l>60?(f(),g("idle","Preview timeout"),m.textContent="Open the project in Web Hosting if the preview did not load (some sites block iframes)."):s()},2e3)},C=e=>{if(H=e,r.disabled=e,w.disabled=e,a.disabled=e,S.disabled=e,k.classList.toggle("hidden",e),T.classList.toggle("hidden",!e),e){g("busy");return}b?g("pending"):p.classList.contains("agentic-preview-frame-wrap--ready")?g("ready"):g("idle")},q=async()=>c||(c=(await I("/api/agent/sessions",{title:"Agentic"})).id,localStorage.setItem(A,c),E(),c),v=e=>{let s=document.createElement("div");s.className="agentic-msg-block",s.innerHTML=e,i.appendChild(s),i.scrollTop=i.scrollHeight},N=e=>{if(e.type==="assistant")v(`<div class="agentic-msg agentic-msg--assistant"><div class="agentic-msg-role">Agent</div><pre class="agentic-msg-body">${u(e.content||"")}</pre></div>`);else if(e.type==="tool_start")v(`<div class="agentic-msg agentic-msg--tool"><div class="agentic-msg-role">Tool \xB7 ${u(e.name)}</div><div class="agentic-msg-meta mono">${u(e.args_preview||"")}</div></div>`);else if(e.type==="tool_end"){let s=K(e.result),l="";if(e.result&&typeof e.result=="object"&&e.result!==null&&"project_id"in e.result){let h=e.result.project_id;h&&(l=`<p class="agentic-deploy-link"><a href="#/project/${h}">Open in Web Hosting \u2192</a></p>`,e.name==="deploy_to_clickdep"&&_(h))}v(`<div class="agentic-msg agentic-msg--toolresult"><div class="agentic-msg-role">Result \xB7 ${u(e.name)}</div><pre class="agentic-msg-body agentic-msg-json">${u(s)}</pre>${l}</div>`)}else e.type==="error"&&v(`<div class="agentic-msg agentic-msg--error">${u(e.message)}</div>`)},M=async()=>{let e=a.value.trim();if(!(!e||H)){C(!0),v(`<div class="agentic-msg agentic-msg--user"><div class="agentic-msg-role">You</div><pre class="agentic-msg-body">${u(e)}</pre></div>`),a.value="";try{let s=await q();await $(s,e,l=>{l.type!=="done"&&N(l)})}catch(s){v(`<div class="agentic-msg agentic-msg--error">${u(s.message)}</div>`)}finally{C(!1)}}};return r.addEventListener("click",()=>void M()),a.addEventListener("keydown",e=>{(e.ctrlKey||e.metaKey)&&e.key==="Enter"&&(e.preventDefault(),M())}),w.addEventListener("click",()=>{a.value="",i.innerHTML="",o.removeAttribute("src"),p.classList.remove("agentic-preview-frame-wrap--ready"),f(),g("idle"),m.textContent="Send a message to chat with the agent. After deploy, the site may load here."}),S.addEventListener("click",async()=>{if(confirm("Start a new session? Current thread is left on the server.")){c=null,localStorage.removeItem(A),E(),i.innerHTML="",a.value="",o.removeAttribute("src"),p.classList.remove("agentic-preview-frame-wrap--ready"),f(),g("idle"),m.textContent="Send a message to chat with the agent. After deploy, the site may load here.";try{c=(await I("/api/agent/sessions",{title:"Agentic"})).id,localStorage.setItem(A,c),E(),window.App?.toast?.("New session","success")}catch(e){window.App?.toast?.(e.message,"error")}}}),()=>{f(),n.classList.remove("agentic-page"),n.innerHTML=""}}var G=P;return J(Q);})();
 //# sourceMappingURL=agentic.js.map
