@@ -7,6 +7,10 @@ function resolveApiUrl(path) {
     if (typeof window === 'undefined' || !path || typeof path !== 'string') return path;
     if (/^https?:\/\//i.test(path)) return path;
     if (!path.startsWith('/')) return path;
+    // Console: localStorage.setItem('clickdep_force_same_origin','1') to disable apex redirect (debug)
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('clickdep_force_same_origin') === '1') {
+        return path;
+    }
     let bdMeta = '';
     if (typeof document !== 'undefined') {
         const m = document.querySelector('meta[name="clickdep-base-domain"]');
@@ -66,21 +70,37 @@ window.API = {
             location.reload();
             throw new Error('Unauthorized');
         }
-        const ct = res.headers.get('content-type') || '';
-        const raw = await res.text();
-        const looksJson =
-            ct.includes('json') ||
-            /^\s*[\[{]/.test(raw);
-        if (raw.trim() && !looksJson) {
-            throw new Error('Invalid response from server.');
+        if (res.status === 204 || res.status === 205) {
+            return {};
         }
+
+        const raw = await res.text();
+        const trimmed = raw.replace(/^\uFEFF/, '').trim();
+
+        if (!trimmed) {
+            if (!res.ok) {
+                throw new Error(`Request failed (${res.status} ${res.statusText || ''})`.trim());
+            }
+            return {};
+        }
+
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        const looksHtml = ct.includes('text/html') || /^\s*<(!DOCTYPE|html)/i.test(trimmed);
+        if (looksHtml) {
+            throw new Error(
+                `HTTP ${res.status}: page HTML instead of API data. Open ClickDep on your main dashboard URL (apex domain or localhost), not a deployed app hostname.`,
+            );
+        }
+
         let data;
         try {
-            data = raw.trim() ? JSON.parse(raw) : {};
-        } catch {
-            throw new Error('Invalid response from server.');
+            data = JSON.parse(trimmed);
+        } catch (e) {
+            throw new Error(
+                `HTTP ${res.status}: not valid JSON (${trimmed.slice(0, 100).replace(/\s+/g, ' ')})`,
+            );
         }
-        if (!res.ok) throw new Error(data.error || 'Request failed');
+        if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
         return data;
     },
 
@@ -93,7 +113,17 @@ window.API = {
         const opts = { method: 'POST', body: formData };
         if (this.token) opts.headers = { 'Authorization': `Bearer ${this.token}` };
         const res = await fetch(resolveApiUrl(url), opts);
-        return res.json();
+        const raw = await res.text();
+        const trimmed = raw.replace(/^\uFEFF/, '').trim();
+        if (!trimmed) {
+            if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+            return {};
+        }
+        try {
+            return JSON.parse(trimmed);
+        } catch (e) {
+            throw new Error(`HTTP ${res.status}: upload response was not JSON`);
+        }
     },
 };
 
