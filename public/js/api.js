@@ -1,7 +1,8 @@
 // ─── API Client & WebSocket Manager ─────────
 /**
- * Deployed apps use *.baseDomain; the dashboard may be opened by IP, hostname, or apex.
- * For project subdomains, /api must target the real dashboard origin (stored in meta + localStorage).
+ * The Node server passes /api through on apex, subdomains, and localhost (server.js).
+ * So relative /api is correct almost always — only foo.localhost needs a different origin.
+ * Optional: localStorage clickdep_api_route_via_apex = '1' if a reverse proxy blocks /api on subdomains.
  */
 function isProjectSubdomain(hostname, bd) {
     if (!bd || typeof hostname !== 'string') return false;
@@ -69,10 +70,7 @@ function recordDashboardOrigin() {
     } catch (e) { /* ignore */ }
 })();
 
-/**
- * HTTPS page (e.g. project.clickdep.dev via Cloudflare) cannot fetch http://localhost:3000 (mixed content).
- * If we have a public base domain, use https://baseDomain for API instead.
- */
+/** When opt-in apex routing: HTTPS page cannot call http://localhost (mixed content). */
 function normalizeDashboardOriginForHttpsTunnel(dash, bd) {
     if (!dash || !bd || location.protocol !== 'https:') return dash;
     try {
@@ -98,6 +96,18 @@ function resolveApiUrl(path) {
     if (typeof localStorage !== 'undefined' && localStorage.getItem('clickdep_force_same_origin') === '1') {
         return path;
     }
+
+    const h = location.hostname.toLowerCase();
+    const port = location.port;
+    const portSuffix = port && port !== '80' && port !== '443' ? ':' + port : '';
+    const proto = location.protocol;
+
+    // foo.localhost is a different browser origin than localhost — same Node, point at loopback
+    if (h.endsWith('.localhost')) {
+        return `${proto}//localhost${portSuffix}${path}`;
+    }
+
+    // Optional: reverse proxy blocks /api on project subdomains — route to apex or saved dashboard URL
     let bdMeta = '';
     if (typeof document !== 'undefined') {
         const m = document.querySelector('meta[name="clickdep-base-domain"]');
@@ -110,12 +120,8 @@ function resolveApiUrl(path) {
         (typeof localStorage !== 'undefined' && localStorage.getItem('clickdep_base_domain')) ||
         bdMeta ||
         '';
-    const h = location.hostname.toLowerCase();
-    const port = location.port;
-    const portSuffix = port && port !== '80' && port !== '443' ? ':' + port : '';
-    const proto = location.protocol;
 
-    if (bd) {
+    if (bd && typeof localStorage !== 'undefined' && localStorage.getItem('clickdep_api_route_via_apex') === '1') {
         const bdLower = bd.toLowerCase();
         if (h !== bdLower && h !== 'localhost' && h !== '127.0.0.1') {
             if (h.endsWith('.' + bdLower)) {
@@ -128,9 +134,8 @@ function resolveApiUrl(path) {
             }
         }
     }
-    if (h.endsWith('.localhost')) {
-        return `${proto}//localhost${portSuffix}${path}`;
-    }
+
+    // Default: same host you see in the address bar (localhost, LAN IP, apex, or *.baseDomain — all hit this Node for /api)
     return path;
 }
 
@@ -181,7 +186,7 @@ window.API = {
         const looksHtml = ct.includes('text/html') || /^\s*<(!DOCTYPE|html)/i.test(trimmed);
         if (looksHtml) {
             throw new Error(
-                `HTTP ${res.status}: got HTML instead of JSON. Set Settings → Dashboard URL to where you open ClickDep (IP or hostname), or open the dashboard at that URL once so it can be remembered.`,
+                `HTTP ${res.status}: got HTML instead of JSON for ${resolveApiUrl(url)}. Hard-refresh (Ctrl+Shift+R). If you use a reverse proxy that blocks /api on subdomains, run: localStorage.setItem('clickdep_api_route_via_apex','1') then reload.`,
             );
         }
 

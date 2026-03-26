@@ -209,15 +209,15 @@ Views.settings = async function (container) {
 
     <div class="settings-section" style="margin-top:16px">
       <h3>🏠 Dashboard URL (API)</h3>
-      <p>Base domain above is for <strong>deployed apps</strong> (e.g. <code>app.${baseDomain || 'yourdomain.com'}</code>). If you open this UI by <strong>server IP</strong>, <strong>hostname</strong>, or a URL that is <em>not</em> the apex, set it here so <code>/api</code> and Agentic work from project subdomains.</p>
+      <p>By default, <code>/api</code> uses <strong>the same host as this page</strong> (localhost, IP, or <code>*.yourdomain</code>) — the server always accepts <code>/api</code> there. Use the field below only if you need a fixed origin (e.g. a reverse proxy that blocks <code>/api</code> on subdomains). Advanced: browser console <code class="mono">localStorage.setItem('clickdep_api_route_via_apex','1')</code> to force routing via your apex domain.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:560px;align-items:flex-end">
         <div class="form-group" style="flex:1;min-width:260px;margin:0">
-          <label>Dashboard origin</label>
-          <input type="url" id="settings-dashboard-origin" placeholder="https://clickdep.dev or http://192.168.1.5:3000" value="${escapedDash}" autocomplete="off">
+          <label>Dashboard origin (optional)</label>
+          <input type="url" id="settings-dashboard-origin" placeholder="Leave empty for same-origin API" value="${escapedDash}" autocomplete="off">
         </div>
         <button type="button" class="btn btn-primary btn-sm" id="settings-dashboard-origin-save" style="height:42px">Save</button>
       </div>
-      <p class="text-xs text-muted" style="margin-top:8px">Saved in this browser. Leave empty to auto-detect from the address bar when you open the dashboard (unless you saved manually before).</p>
+      <p class="text-xs text-muted" style="margin-top:8px">Saved in this browser only. Clear to rely on auto-detect.</p>
     </div>
 
     <div class="settings-section" style="margin-top:16px">
