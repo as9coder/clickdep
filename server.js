@@ -351,12 +351,14 @@ const vpsRoutes = require('./src/routes/vps');
 const cronRoutes = require('./src/routes/cron');
 const mediaRoutes = require('./src/routes/media');
 const functionRoutes = require('./src/routes/functions');
+const agentRoutes = require('./src/routes/agent');
 
 // Attach broadcast to routes that need it
 projectRoutes.setBroadcast(broadcast);
 webhookRoutes.setBroadcast(broadcast);
 vpsRoutes.setBroadcast(broadcast);
 github.setBroadcast(broadcast);
+agentRoutes.setBroadcast(broadcast);
 
 app.use('/api/projects', projectRoutes);
 app.use('/api/system', systemRoutes);
@@ -366,6 +368,7 @@ app.use('/api/vps', vpsRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/functions', functionRoutes);
+app.use('/api/agent', agentRoutes);
 
 // SPA fallback
 app.get('*', (req, res) => {

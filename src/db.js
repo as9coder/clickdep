@@ -222,6 +222,29 @@ db.exec(`
     FOREIGN KEY (function_id) REFERENCES functions(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_fn_logs ON function_logs(function_id);
+
+  CREATE TABLE IF NOT EXISTS agent_sessions (
+    id TEXT PRIMARY KEY,
+    workspace_root TEXT NOT NULL,
+    linked_project_id TEXT,
+    title TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS agent_messages (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    seq INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT,
+    tool_calls TEXT,
+    tool_call_id TEXT,
+    name TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES agent_sessions(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_agent_msg_sess ON agent_messages(session_id, seq);
 `);
 
 // Gracefully add columns to existing tables if they don't exist
@@ -361,6 +384,17 @@ const stmts = {
   insertFunctionLog: db.prepare(`INSERT INTO function_logs (id, function_id, method, path, status_code, duration_ms, console_output, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
   getFunctionLogs: db.prepare(`SELECT * FROM function_logs WHERE function_id = ? ORDER BY executed_at DESC LIMIT 100`),
   pruneFunctionLogs: db.prepare(`DELETE FROM function_logs WHERE executed_at < datetime('now', '-7 days')`),
+
+  // Agentic Code
+  insertAgentSession: db.prepare(`INSERT INTO agent_sessions (id, workspace_root, linked_project_id, title) VALUES (?, ?, ?, ?)`),
+  getAgentSession: db.prepare(`SELECT * FROM agent_sessions WHERE id = ?`),
+  updateAgentSessionWorkspace: db.prepare(`UPDATE agent_sessions SET workspace_root = ?, linked_project_id = ?, updated_at = datetime('now') WHERE id = ?`),
+  updateAgentSessionTitle: db.prepare(`UPDATE agent_sessions SET title = ?, updated_at = datetime('now') WHERE id = ?`),
+  deleteAgentSession: db.prepare(`DELETE FROM agent_sessions WHERE id = ?`),
+  listAgentSessions: db.prepare(`SELECT * FROM agent_sessions ORDER BY updated_at DESC LIMIT 100`),
+  insertAgentMessage: db.prepare(`INSERT INTO agent_messages (id, session_id, seq, role, content, tool_calls, tool_call_id, name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
+  getAgentMessages: db.prepare(`SELECT * FROM agent_messages WHERE session_id = ? ORDER BY seq ASC`),
+  maxAgentMessageSeq: db.prepare(`SELECT COALESCE(MAX(seq), -1) as m FROM agent_messages WHERE session_id = ?`),
 };
 
 module.exports = { db, stmts, DATA_DIR, DB_PATH };
