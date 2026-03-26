@@ -1,5 +1,12 @@
 /** POST /api/agent/sessions/:id/chat — SSE stream of JSON events */
 
+export function apiUrl(path: string): string {
+  const fn =
+    typeof window !== 'undefined' &&
+    (window as unknown as { API?: { resolveUrl?: (p: string) => string } }).API?.resolveUrl;
+  return typeof fn === 'function' ? fn(path) : path;
+}
+
 export type AgentStreamEvent =
   | { type: 'assistant'; content: string }
   | { type: 'tool_start'; name: string; id: string; args_preview?: string }
@@ -13,7 +20,7 @@ export async function streamAgentChat(
   onEvent: (ev: AgentStreamEvent) => void,
 ): Promise<void> {
   const token = localStorage.getItem('clickdep_token') || '';
-  const res = await fetch(`/api/agent/sessions/${encodeURIComponent(sessionId)}/chat`, {
+  const res = await fetch(apiUrl(`/api/agent/sessions/${encodeURIComponent(sessionId)}/chat`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

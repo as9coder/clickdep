@@ -64,12 +64,14 @@ window.App = {
 
     async startApp() {
         document.getElementById('app').classList.remove('hidden');
-        WS.connect();
 
         try {
             const d = await API.get('/api/auth/domain');
             this.baseDomain = d.domain || '';
+            try { localStorage.setItem('clickdep_base_domain', this.baseDomain); } catch (e) { }
         } catch (e) { this.baseDomain = ''; }
+
+        WS.connect();
 
         this.bindRouter();
         this.bindCommandPalette();

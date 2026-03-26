@@ -309,6 +309,41 @@ function broadcast(data) {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// CORS for /api when browser calls dashboard origin from a project subdomain (e.g. foo.base.com → base.com)
+function isOriginAllowedForApi(origin) {
+    if (!origin || typeof origin !== 'string') return false;
+    try {
+        const u = new URL(origin);
+        const h = u.hostname.toLowerCase();
+        if (h === 'localhost' || h === '127.0.0.1') return true;
+        if (h.endsWith('.localhost')) return true;
+        const bd = getBaseDomain();
+        if (!bd) {
+            return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.localhost');
+        }
+        const bdLower = bd.toLowerCase();
+        if (h === bdLower || h === 'www.' + bdLower) return true;
+        if (h.endsWith('.' + bdLower)) return true;
+    } catch (e) { /* ignore */ }
+    return false;
+}
+
+app.use('/api', (req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && isOriginAllowedForApi(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Vary', 'Origin');
+    }
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        return res.status(204).end();
+    }
+    next();
+});
+
 // Auth middleware (skip for login/setup/webhooks)
 app.use('/api', (req, res, next) => {
     // Skip auth for these paths
@@ -338,6 +373,19 @@ app.use('/api', (req, res, next) => {
 
     res.status(401).json({ error: 'Invalid token' });
 });
+
+function sendIndexHtml(res) {
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    let html = fs.readFileSync(indexPath, 'utf8');
+    const bd = getBaseDomain() || '';
+    const safe = bd.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    html = html.replace(/__CLICKDEP_BASE_DOMAIN__/g, safe);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+}
+
+// Serve dashboard HTML with injected base domain (must be before express.static, which would otherwise serve index.html raw)
+app.get(['/', '/index.html'], (req, res) => sendIndexHtml(res));
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -375,7 +423,7 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API route not found' });
     }
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    sendIndexHtml(res);
 });
 
 // ─── Metrics Collection (every 30s) ──────────

@@ -1,4 +1,4 @@
-import { streamAgentChat, type AgentStreamEvent } from './stream';
+import { streamAgentChat, apiUrl, type AgentStreamEvent } from './stream';
 
 const PRESETS = [
   'A landing page for a coffee roastery with hero, menu section, and contact form.',
@@ -11,7 +11,7 @@ const LS_SESSION = 'clickdep_agentic_session';
 
 async function apiGet<T>(path: string): Promise<T> {
   const token = localStorage.getItem('clickdep_token') || '';
-  const r = await fetch(path, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+  const r = await fetch(apiUrl(path), { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
   const j = await r.json();
   if (!r.ok) throw new Error((j as { error?: string }).error || 'Request failed');
   return j as T;
@@ -19,7 +19,7 @@ async function apiGet<T>(path: string): Promise<T> {
 
 async function apiPost<T>(path: string, body?: object): Promise<T> {
   const token = localStorage.getItem('clickdep_token') || '';
-  const r = await fetch(path, {
+  const r = await fetch(apiUrl(path), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
