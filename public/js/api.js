@@ -69,6 +69,28 @@ function recordDashboardOrigin() {
     } catch (e) { /* ignore */ }
 })();
 
+/**
+ * HTTPS page (e.g. project.clickdep.dev via Cloudflare) cannot fetch http://localhost:3000 (mixed content).
+ * If we have a public base domain, use https://baseDomain for API instead.
+ */
+function normalizeDashboardOriginForHttpsTunnel(dash, bd) {
+    if (!dash || !bd || location.protocol !== 'https:') return dash;
+    try {
+        const u = new URL(dash);
+        if (u.protocol !== 'http:') return dash;
+        const host = u.hostname.toLowerCase();
+        const isLoopback = host === 'localhost' || host === '127.0.0.1';
+        const isPrivateLan =
+            /^10\.\d+\.\d+\.\d+$/.test(host) ||
+            /^192\.168\.\d+\.\d+$/.test(host) ||
+            /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host);
+        if (isLoopback || isPrivateLan) {
+            return `https://${bd.toLowerCase()}`;
+        }
+    } catch (e) { /* ignore */ }
+    return dash;
+}
+
 function resolveApiUrl(path) {
     if (typeof window === 'undefined' || !path || typeof path !== 'string') return path;
     if (/^https?:\/\//i.test(path)) return path;
@@ -97,8 +119,9 @@ function resolveApiUrl(path) {
         const bdLower = bd.toLowerCase();
         if (h !== bdLower && h !== 'localhost' && h !== '127.0.0.1') {
             if (h.endsWith('.' + bdLower)) {
-                const dash = getDashboardOriginResolved();
+                let dash = getDashboardOriginResolved();
                 if (dash) {
+                    dash = normalizeDashboardOriginForHttpsTunnel(dash, bd);
                     return `${dash}${path}`;
                 }
                 return `${proto}//${bdLower}${portSuffix}${path}`;
