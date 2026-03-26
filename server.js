@@ -370,8 +370,11 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/functions', functionRoutes);
 app.use('/api/agent', agentRoutes);
 
-// SPA fallback
+// SPA fallback (never serve HTML for unknown /api — avoids JSON clients getting index.html)
 app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API route not found' });
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

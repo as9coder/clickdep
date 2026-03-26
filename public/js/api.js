@@ -15,7 +15,26 @@ window.API = {
             location.reload();
             throw new Error('Unauthorized');
         }
-        const data = await res.json();
+        const ct = res.headers.get('content-type') || '';
+        const raw = await res.text();
+        const looksJson =
+            ct.includes('json') ||
+            /^\s*[\[{]/.test(raw);
+        if (raw.trim() && !looksJson) {
+            throw new Error(
+                /^\s*<!DOCTYPE|^\s*<html/i.test(raw)
+                    ? 'Server returned HTML instead of JSON. Use the ClickDep dashboard URL (not a project subdomain), restart the server after updating, and ensure /api/agent routes are loaded.'
+                    : raw.slice(0, 160),
+            );
+        }
+        let data;
+        try {
+            data = raw.trim() ? JSON.parse(raw) : {};
+        } catch {
+            throw new Error(
+                'Invalid JSON from server — restart ClickDep after updating, or check that you are not opening the app from a cached copy.',
+            );
+        }
         if (!res.ok) throw new Error(data.error || 'Request failed');
         return data;
     },
