@@ -148,11 +148,13 @@ window.App = {
             const id = hash.replace('#/functions/', '');
             await FunctionViews.detail(container, id);
         } else if (hash === '#/agentic') {
-            if (!window.AgenticCode || typeof window.AgenticCode.mount !== 'function') {
-                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><h2>Agentic Code not loaded</h2><p class="text-muted">Run <code class="mono">npm run build:agentic</code> then refresh.</p><a href="#/" class="btn btn-primary">Dashboard</a></div>';
+            const ac = window.AgenticCode;
+            const mountFn = ac && typeof ac.mount === 'function' ? ac.mount : (ac && ac.default && typeof ac.default.mount === 'function' ? ac.default.mount : null);
+            if (typeof mountFn !== 'function') {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><h2>Agentic Code not loaded</h2><p class="text-muted">From the project root run <code class="mono">npm run build:agentic</code>, restart the server, then hard-refresh (Ctrl+Shift+R).</p><a href="#/" class="btn btn-primary">Dashboard</a></div>';
                 return;
             }
-            this.currentCleanup = window.AgenticCode.mount(container);
+            this.currentCleanup = mountFn(container);
         } else {
             container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">404</div><h2>Page not found</h2><a href="#/" class="btn btn-primary">Go Home</a></div>';
         }
